@@ -1,0 +1,3554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>店内补货工作台</title>
+<style>
+  :root{
+    --bg:#e9f2fc; --card:#ffffff; --line:#dde7f3; --line-soft:#eaf1f9;
+    --text:#2b2f36; --muted:#8b919c; --muted-2:#aab0bb;
+    --accent:#1f9d74; --accent-soft:#e6f6f0; --accent-ink:#137a59;
+    --danger:#e5573f; --danger-soft:#fdecea; --warn:#e08a1e; --warn-soft:#fdf3e3;
+    --ok:#2ea36b; --ok-soft:#e9f6ef;
+    --shadow:0 1px 2px rgba(20,30,50,.04), 0 6px 20px rgba(20,30,50,.06);
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:15px; line-height:1.6; color:var(--text);
+    background:linear-gradient(180deg,#e3eefb 0%, #eaf3fc 45%, #f3f8fe 100%);
+    background-attachment:fixed;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* top bar */
+  .topbar{
+    position:sticky; top:0; z-index:30; background:rgba(255,255,255,.88);
+    backdrop-filter:saturate(160%) blur(10px);
+    border-bottom:1px solid var(--line); padding:14px 22px;
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+  }
+  .brand{display:flex; align-items:center; gap:11px; min-width:0}
+  .logo{
+    width:38px; height:38px; border-radius:11px; flex:none;
+    background:linear-gradient(135deg,var(--accent),#37b88c);
+    display:flex; align-items:center; justify-content:center; color:#fff; font-size:20px;
+    box-shadow:0 4px 12px rgba(31,157,116,.28);
+  }
+  .brand h1{font-size:18px; margin:0; font-weight:700; letter-spacing:.3px}
+  .brand p{margin:0; font-size:12.5px; color:var(--muted)}
+  .stats{display:flex; gap:10px; margin-left:auto; flex-wrap:wrap}
+  .stat{
+    background:var(--card); border:1px solid var(--line); border-left:3px solid var(--line);
+    border-radius:11px; padding:7px 14px; min-width:78px; text-align:center; box-shadow:var(--shadow);
+    transition:transform .15s, box-shadow .15s;
+  }
+  .stat:hover{transform:translateY(-2px); box-shadow:0 4px 14px rgba(20,30,50,.1)}
+  .stat b{display:block; font-size:19px; line-height:1.2; font-variant-numeric:tabular-nums}
+  .stat span{font-size:11.5px; color:var(--muted)}
+  .stat:first-child{border-left-color:var(--accent)}
+  .stat.zero{border-left-color:var(--danger)} .stat.low{border-left-color:var(--warn)} .stat.ok{border-left-color:var(--ok)}
+  .stat.zero b{color:var(--danger)} .stat.low b{color:var(--warn)} .stat.ok b{color:var(--ok)}
+
+  .wrap{max-width:1280px; margin:0 auto; padding:18px 22px 40px;
+    display:grid; grid-template-columns:1fr 340px; gap:18px; align-items:start}
+  @media(max-width:980px){ .wrap{grid-template-columns:1fr} }
+
+  /* filter card */
+  .panel{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); transition:box-shadow .2s, transform .2s}
+  .panel:hover{box-shadow:0 2px 5px rgba(20,30,50,.05), 0 12px 30px rgba(20,30,50,.09)}
+  .filters{padding:16px 18px; display:flex; flex-direction:column; gap:13px}
+  .search{position:relative}
+  .search input{
+    width:100%; height:44px; padding:0 90px 0 42px; font-size:15px;
+    border:1px solid var(--line); border-radius:12px; background:#fbfcfe; color:var(--text);
+    outline:none; transition:border-color .15s, box-shadow .15s;
+  }
+  .search input:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); background:#fff}
+  .search svg{position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--muted-2)}
+  .scan-btn{
+    position:absolute; right:7px; top:50%; transform:translateY(-50%);
+    width:34px; height:34px; border:none; border-radius:9px; cursor:pointer;
+    background:var(--accent-soft); color:var(--accent-ink); font-size:17px;
+    display:flex; align-items:center; justify-content:center; transition:background .12s;
+  }
+  .scan-btn:hover{background:#d7efe6}
+  .qr-btn{
+    position:absolute; right:48px; top:50%; transform:translateY(-50%);
+    width:34px; height:34px; border:none; border-radius:9px; cursor:pointer;
+    background:#e3eefb; color:#1f5fa8; font-size:17px;
+    display:flex; align-items:center; justify-content:center; transition:background .12s;
+  }
+  .qr-btn:hover{background:#d2e2f6}
+  .qr-modal{position:fixed; inset:0; background:rgba(20,30,45,.55); display:none; align-items:center; justify-content:center; z-index:80; padding:20px}
+  .qr-modal.show{display:flex}
+  .qr-card{background:#fff; border-radius:18px; padding:22px; width:min(340px,92%); text-align:center; box-shadow:0 20px 50px rgba(0,0,0,.3)}
+  .qr-card h3{margin:0 0 4px; font-size:17px; color:var(--text)}
+  .qr-card p{margin:0 0 14px; font-size:13px; color:var(--muted)}
+  .qr-card img{width:240px; height:240px; border-radius:12px; margin:0 auto; display:block; border:1px solid var(--line)}
+  .qr-card .qr-url{margin-top:12px; font-size:12px; color:var(--muted-2); word-break:break-all; background:#f6f9fd; padding:8px 10px; border-radius:8px}
+  .qr-card .btn{margin-top:14px; width:100%}
+  .scan-box{background:#0e1726; border-radius:16px; width:min(420px,92%); overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,.4)}
+  .scan-head{display:flex; align-items:center; justify-content:space-between; padding:12px 16px; color:#fff; font-weight:600; background:#15233a}
+  .scan-x{border:none; background:none; color:#fff; font-size:17px; cursor:pointer; opacity:.8}
+  .scan-view{position:relative; aspect-ratio:4/3; background:#000; overflow:hidden}
+  .scan-view video{width:100%; height:100%; object-fit:cover; display:block}
+  .scan-frame{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:72%; height:42%; border:2px solid rgba(255,255,255,.9); border-radius:12px; box-shadow:0 0 0 9999px rgba(0,0,0,.35); pointer-events:none}
+  .scan-line{position:absolute; left:14%; right:14%; top:29%; height:2px; background:var(--accent); box-shadow:0 0 8px var(--accent); animation:scanmove 1.8s ease-in-out infinite}
+  @keyframes scanmove{0%{top:29%}50%{top:67%}100%{top:29%}}
+  .scan-tip{color:#cdd6e4; font-size:13px; text-align:center; padding:10px 14px}
+  .scan-manual{display:flex; gap:8px; padding:0 14px 14px}
+  .scan-manual input{flex:1; height:42px; border:none; border-radius:10px; padding:0 12px; font-size:15px; outline:none}
+  .scan-manual .btn{width:auto; padding:0 18px; margin-top:0}
+  .chips{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+  .chips .lbl{font-size:12.5px; color:var(--muted); margin-right:2px}
+  .chip{
+    border:1px solid var(--line); background:#fff; color:#5a606b; border-radius:999px;
+    padding:6px 13px; font-size:13.5px; cursor:pointer; user-select:none; transition:all .12s;
+  }
+  .chip:hover{border-color:#cfd5de}
+  .chip.active{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600}
+  .chip.warn.active{background:var(--warn); border-color:var(--warn)}
+  .chip.danger.active{background:var(--danger); border-color:var(--danger)}
+  .toolbar2{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  .resultline{font-size:13px; color:var(--muted)}
+  .resultline b{color:var(--text); font-variant-numeric:tabular-nums}
+
+  /* table */
+  .tablecard{margin-top:16px; overflow:hidden}
+  .table-scroll{overflow-x:auto}
+  table{width:100%; border-collapse:collapse; font-size:13.5px}
+  thead th{
+    position:sticky; top:0; background:#f2f7fd; text-align:left; padding:9px 14px;
+    font-size:12px; font-weight:600; color:#7a818d; border-bottom:1px solid #d6e2f2;
+    white-space:nowrap; z-index:5;
+  }
+  tbody td{padding:9px 14px; border-bottom:1px solid var(--line-soft); vertical-align:middle}
+  tbody tr:hover{background:#f3f8fe}
+  .pname{font-weight:600; color:var(--text)}
+  .pbarcode{font-size:12px; color:var(--muted-2); font-variant-numeric:tabular-nums; margin-top:1px}
+  .tag{display:inline-block; padding:2px 9px; border-radius:7px; font-size:12px; background:#f0f2f6; color:#5a606b}
+  .sup-tag{font-size:12px; color:var(--accent-ink); background:var(--accent-soft); padding:2px 9px; border-radius:7px; font-weight:600}
+  .price{font-variant-numeric:tabular-nums; font-weight:600}
+  .mem{color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums}
+  .stock{font-variant-numeric:tabular-nums; font-weight:700; font-size:14.5px}
+  .badge{display:inline-block; padding:2px 9px; border-radius:999px; font-size:11.5px; font-weight:600; margin-left:5px; vertical-align:middle}
+  .badge.zero{background:var(--danger-soft); color:var(--danger)}
+  .badge.low{background:var(--warn-soft); color:var(--warn)}
+  .badge.ok{background:var(--ok-soft); color:var(--ok)}
+  .num-cell{font-variant-numeric:tabular-nums; color:#5a606b}
+
+  /* stepper */
+  .stepper{display:inline-flex; align-items:center; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:#fff}
+  .stepper button{
+    width:30px; height:32px; border:none; background:#fbfcfe; color:#5a606b; font-size:17px;
+    cursor:pointer; line-height:1; transition:background .12s;
+  }
+  .stepper button:hover{background:var(--accent-soft); color:var(--accent-ink)}
+  .stepper button:disabled{color:#cfd5de; cursor:not-allowed; background:#fbfcfe}
+  .stepper input{
+    width:46px; height:32px; border:none; border-left:1px solid var(--line); border-right:1px solid var(--line);
+    text-align:center; font-size:14px; color:var(--text); background:#fff; outline:none; font-variant-numeric:tabular-nums;
+  }
+  .ou-hint{font-size:11px; color:var(--muted-2); text-align:center; margin-top:4px; letter-spacing:.3px}
+  .empty{padding:46px 20px; text-align:center; color:var(--muted)}
+  .empty .big{font-size:34px; margin-bottom:8px}
+
+  /* pagination */
+  .pager{display:flex; align-items:center; justify-content:center; gap:10px; padding:13px; border-top:1px solid var(--line)}
+  .pager button{
+    border:1px solid var(--line); background:#fff; color:#5a606b; border-radius:9px;
+    padding:6px 14px; font-size:13.5px; cursor:pointer; transition:all .12s;
+  }
+  .pager button:hover:not(:disabled){border-color:var(--accent); color:var(--accent-ink)}
+  .pager button:disabled{opacity:.45; cursor:not-allowed}
+  .pager .pg{font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums}
+
+  /* cart */
+  .cart{position:sticky; top:88px}
+  .cart .chead{padding:15px 18px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px}
+  .cart .chead h2{margin:0; font-size:16px}
+  .cart .chead .cnt{margin-left:auto; background:var(--accent); color:#fff; border-radius:999px; font-size:12.5px; padding:1px 9px; font-weight:700; font-variant-numeric:tabular-nums}
+  .cart .cbody{max-height:calc(100vh - 320px); overflow-y:auto; padding:6px 12px}
+  .cgroup{padding:8px 6px 4px}
+  .cgroup .gt{font-size:12.5px; color:var(--accent-ink); font-weight:700; background:var(--accent-soft); padding:3px 10px 3px 11px; border-left:3px solid var(--accent); border-radius:5px 7px 7px 5px; display:inline-block; margin-bottom:4px}
+  .citem{display:flex; align-items:center; gap:8px; padding:7px 4px; border-bottom:1px dashed var(--line-soft)}
+  .citem .ci-name{font-size:13px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .citem .ci-q{font-variant-numeric:tabular-nums; font-weight:600; color:var(--text); font-size:13px}
+  .citem .ci-sub{font-variant-numeric:tabular-nums; color:var(--muted); font-size:12px; min-width:62px; text-align:right}
+  .citem .ci-x{border:none; background:none; color:var(--muted-2); cursor:pointer; font-size:15px; padding:0 2px}
+  .citem .ci-x:hover{color:var(--danger)}
+  .cart .cfoot{padding:14px 18px; border-top:1px solid var(--line); background:#fafbfd; border-radius:0 0 var(--radius) var(--radius)}
+  .totalrow{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:11px}
+  .totalrow .t-lbl{font-size:13px; color:var(--muted)}
+  .totalrow .t-val{font-size:22px; font-weight:800; color:var(--accent-ink); font-variant-numeric:tabular-nums}
+  .totalrow .t-val small{font-size:13px; font-weight:600; color:var(--muted)}
+  .btn{
+    width:100%; border:none; border-radius:11px; padding:12px; font-size:15px; font-weight:700;
+    cursor:pointer; transition:transform .08s, box-shadow .15s; display:flex; align-items:center; justify-content:center; gap:7px;
+  }
+  .btn.primary{background:linear-gradient(135deg,var(--accent),#188a63); color:#fff; box-shadow:0 6px 16px rgba(31,157,116,.32)}
+  .btn.primary:hover{background:linear-gradient(135deg,#1b8c68,#157a57); box-shadow:0 8px 22px rgba(31,157,116,.42); transform:translateY(-1px)}
+  .btn.primary:active{transform:translateY(1px)}
+  .btn.ghost{background:#fff; color:#5a606b; border:1px solid var(--line); margin-top:8px}
+  .btn.ghost:hover{border-color:#cfd5de}
+  .btn:disabled{opacity:.5; cursor:not-allowed; box-shadow:none}
+  .cart .chint{font-size:12px; color:var(--muted-2); text-align:center; padding:24px 14px}
+
+  /* mobile bottom-bar cart trigger (hidden on desktop) */
+  .mbar{display:none; align-items:center; gap:10px; padding:12px 16px; cursor:pointer; background:#fff}
+  .mbar>span:first-child{font-weight:600; font-size:14.5px}
+  .mbar .mcount{color:var(--muted); font-size:13px}
+  .mbar .mcount b{color:var(--text)}
+  .mbar .mtotal{margin-left:auto; font-weight:800; color:var(--accent-ink); font-size:17px; font-variant-numeric:tabular-nums}
+  .mbar .mtoggle{font-size:12.5px; color:var(--muted)}
+  #cartBackdrop{display:none}
+
+  /* toast */
+  .toast{
+    position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:#2b2f36; color:#fff; padding:11px 18px; border-radius:11px; font-size:14px;
+    box-shadow:0 10px 30px rgba(0,0,0,.25); opacity:0; pointer-events:none; transition:all .25s; z-index:99;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+  /* modal */
+  .mask{position:fixed; inset:0; background:rgba(20,28,40,.42); display:none; align-items:center; justify-content:center; z-index:80; padding:20px}
+  .mask.show{display:flex}
+  .modal{background:#fff; border-radius:16px; width:min(620px,100%); max-height:84vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,.3)}
+  .modal h3{margin:0; padding:16px 20px; font-size:17px; border-bottom:1px solid var(--line)}
+  .modal .mbody{padding:14px 20px; overflow:auto; font-size:13.5px}
+  .modal pre{margin:0; white-space:pre-wrap; font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:12.5px; color:#3a4049; background:#f7f9fc; border:1px solid var(--line); border-radius:10px; padding:12px; max-height:46vh; overflow:auto}
+  .modal .mfoot{padding:13px 20px; border-top:1px solid var(--line); display:flex; gap:10px; flex-wrap:wrap}
+  .modal .mfoot .btn{margin:0; width:auto; flex:1 1 auto; min-width:120px}
+  .ord-block{margin-bottom:14px}
+  .ord-block .oh{display:flex; align-items:center; gap:8px; font-weight:700; color:var(--accent-ink); margin-bottom:5px}
+  .ord-block table{font-size:12.5px; margin-top:4px}
+  .ord-block th,.ord-block td{padding:6px 8px; border-bottom:1px solid var(--line-soft)}
+  .ord-block th{color:var(--muted); font-weight:600}
+
+  /* ======================= MOBILE (phones) ======================= */
+  @media (max-width:760px){
+    body{font-size:14.5px}
+    .topbar{padding:10px 13px; gap:8px}
+    .brand h1{font-size:16px}
+    .brand p{display:none}
+    .logo{width:34px; height:34px; font-size:18px; border-radius:10px}
+    .stats{width:100%; margin-left:0; gap:7px}
+    .stat{flex:1; min-width:0; padding:6px 6px}
+    .stat b{font-size:16px}
+    .stat span{font-size:11px}
+
+    .wrap{grid-template-columns:1fr; padding:12px 12px 100px; gap:12px}
+
+    .filters{padding:13px 13px}
+    .search input{height:46px}
+    .chip{padding:7px 13px; font-size:14px}
+    .toolbar2{gap:8px}
+
+    /* product table -> stacked cards */
+    .tablecard{margin-top:10px}
+    .table-scroll{overflow:visible}
+    table,thead,tbody,tr,td{display:block; width:100%}
+    thead{display:none}
+    tbody tr{border:1px solid var(--line); border-radius:12px; margin-bottom:9px; padding:1px 0; background:#fff; box-shadow:0 1px 2px rgba(20,30,50,.05)}
+    tbody tr:hover{background:#fff}
+    tbody td{border:none; padding:6px 12px; display:flex; align-items:center; justify-content:space-between; gap:10px; text-align:right}
+    tbody td::before{content:attr(data-label); color:var(--muted); font-size:12px; font-weight:500; flex:none; text-align:left}
+    tbody td:first-child{display:block; padding:9px 12px 7px; border-bottom:1px solid var(--line-soft); margin-bottom:1px}
+    tbody td:first-child::before{display:none}
+    .pname{font-size:15px; font-weight:600; letter-spacing:.2px}
+    .pbarcode{font-size:11.5px}
+    tbody td:last-child{justify-content:space-between; background:var(--accent-soft); border-radius:0 0 11px 11px; margin-top:4px; padding:8px 12px}
+    tbody td:last-child::before{color:var(--accent-ink); font-weight:600; font-size:12px}
+    .stepper button{width:36px; height:36px; font-size:18px; border-radius:9px}
+    .stepper input{height:36px; width:50px; font-size:14.5px}
+    .pager button{padding:8px 18px; font-size:14px}
+
+    /* cart -> fixed bottom sheet */
+    .cart{position:fixed; left:0; right:0; bottom:0; top:auto; border-radius:16px 16px 0 0; box-shadow:0 -8px 28px rgba(20,30,50,.16); z-index:60}
+    .cart .chead{display:none}
+    .cart .mbar{display:flex}
+    .cart .cbody{display:none; max-height:50vh}
+    .cart.open .cbody{display:block}
+    .cart .cfoot{display:none}
+    .cart.open .cfoot{display:flex; flex-direction:column}
+    .cart.open .cfoot .btn.primary{margin-top:0}
+    .cart.open .cfoot .btn.ghost{margin-top:8px}
+    #cartBackdrop{position:fixed; inset:0; background:rgba(20,28,40,.42); z-index:55}
+    #cartBackdrop.show{display:block}
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">🛒</div>
+      <div>
+        <h1>店内补货工作台</h1>
+        <p>商品查询 · 智能补货 · 一键生成补货单</p>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="stTotal">0</b><span>商品总数</span></div>
+      <div class="stat zero"><b id="stZero">0</b><span>缺货</span></div>
+      <div class="stat low"><b id="stLow">0</b><span>低库存</span></div>
+      <div class="stat ok"><b id="stSup">4</b><span>供货商</span></div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <!-- left: query -->
+    <div>
+      <div class="panel filters">
+        <div class="search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input id="q" type="text" placeholder="搜索商品名称或条码…" autocomplete="off" />
+          <button id="qrBtn" class="qr-btn" title="手机扫码打开" aria-label="手机扫码打开">📱</button>
+          <button id="scanBtn" class="scan-btn" title="扫码录入条码" aria-label="扫码录入条码">📷</button>
+        </div>
+        <div class="chips" id="supChips"><span class="lbl">供货商</span></div>
+        <div class="chips" id="catChips"><span class="lbl">分组</span></div>
+        <div class="toolbar2">
+          <div class="chips">
+            <span class="lbl">快捷</span>
+            <span class="chip warn" data-q="low">仅看低库存</span>
+            <span class="chip danger" data-q="zero">仅看缺货</span>
+          </div>
+          <div class="resultline">匹配 <b id="resCount">0</b> 个商品</div>
+        </div>
+      </div>
+
+      <div class="panel tablecard">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th style="min-width:200px">商品</th>
+                <th>供货商</th>
+                <th>分组</th>
+                <th>售价</th>
+                <th>会员价</th>
+                <th>库存</th>
+                <th>单位</th>
+                <th>成本</th>
+                <th style="text-align:right">补货</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="empty" style="display:none">
+          <div class="big">🔍</div>
+          <div>没有匹配的商品，试试调整筛选条件</div>
+        </div>
+        <div class="pager">
+          <button id="prevPage">上一页</button>
+          <span class="pg" id="pgInfo">1 / 1</span>
+          <button id="nextPage">下一页</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- right: cart -->
+    <div class="panel cart" id="cart">
+      <div class="chead">
+        <h2>补货清单</h2>
+        <span class="cnt" id="cartCount">0</span>
+      </div>
+      <div class="mbar" id="cartBar">
+        <span>🛒 补货清单</span>
+        <span class="mcount"><b id="barCount">0</b> 件</span>
+        <span class="mtoggle" id="barToggle">展开 ▴</span>
+      </div>
+      <div class="cbody" id="cartBody">
+        <div class="chint">在下方点击商品「+」加入补货清单<br/>清单按供货商自动分组</div>
+      </div>
+      <div class="cfoot">
+        <div class="totalrow">
+          <span class="t-lbl">补货商品</span>
+          <span class="t-val"><span id="cartTotal">0</span> 件</span>
+        </div>
+        <button class="btn primary" id="genBtn" disabled>生成补货单</button>
+        <button class="btn ghost" id="clearBtn" disabled>清空清单</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="cartBackdrop"></div>
+
+  <div class="qr-modal" id="qrModal">
+    <div class="qr-card">
+      <h3>手机扫码打开工作台</h3>
+      <p>用手机相机 / 微信「扫一扫」对准二维码</p>
+      <img src="qrcode.png" alt="工作台二维码" />
+      <div class="qr-url" id="qrUrl"></div>
+      <button class="btn ghost" id="qrClose">关闭</button>
+    </div>
+  </div>
+
+  <!-- barcode scanner -->
+  <div class="mask" id="scanMask">
+    <div class="scan-box">
+      <div class="scan-head">
+        <span>扫码录入条码</span>
+        <button id="scanClose" class="scan-x" aria-label="关闭">✕</button>
+      </div>
+      <div class="scan-view">
+        <video id="scanVideo" playsinline></video>
+        <div class="scan-frame"></div>
+        <div class="scan-line"></div>
+      </div>
+      <div class="scan-tip" id="scanTip">将商品条码对准取景框</div>
+      <div class="scan-manual">
+        <input id="scanManual" type="text" inputmode="numeric" placeholder="或手动输入条码" />
+        <button id="scanManualBtn" class="btn primary">确定</button>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <div class="mask" id="mask">
+    <div class="modal">
+      <h3>补货单预览</h3>
+      <div class="mbody" id="modalBody"></div>
+      <div class="mfoot">
+        <button class="btn ghost" id="copyBtn">复制全部</button>
+        <button class="btn ghost" id="dlBtn">下载 CSV</button>
+        <button class="btn primary" id="imgBtn">保存图片</button>
+        <button class="btn ghost" id="shareBtn" style="display:none">分享</button>
+        <button class="btn ghost" id="closeBtn">关闭</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+window.PRODUCTS = [
+ {
+  "supplier": "海然",
+  "name": "海然15g大魔王魔芋素毛肚六必居麻酱",
+  "barcode": "6926104974853",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 13,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "海然",
+  "name": "海然九阳哈基米150g南北绿豆",
+  "barcode": "6950873215367",
+  "category": "零食",
+  "price": 2.5,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 1.8
+ },
+ {
+  "supplier": "海然",
+  "name": "海然嚼拌50g原味奶酪",
+  "barcode": "6976507171588",
+  "category": "零食",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然盐津铺子36g糖醋味手撕鸭脖",
+  "barcode": "6926104971111",
+  "category": "零食",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": 7,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然绝艺26g香辣味藕片",
+  "barcode": "6955923178081",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 1,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "海然",
+  "name": "海然绝艺26g黑鸭味藕片",
+  "barcode": "6955923178210",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "海然",
+  "name": "海然老李18g五香豆腐干",
+  "barcode": "6920433818468",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 7,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "海然",
+  "name": "海然脱骨侠21g无骨鸡爪柠檬味",
+  "barcode": "6975750070464",
+  "category": "零食",
+  "price": 3.5,
+  "memberPrice": null,
+  "stock": 11,
+  "unit": "份",
+  "cost": 2.4
+ },
+ {
+  "supplier": "海然",
+  "name": "海然茶之派100g盐焗鸭腿",
+  "barcode": "6935563276033",
+  "category": "零食",
+  "price": 6.0,
+  "memberPrice": null,
+  "stock": -4,
+  "unit": "份",
+  "cost": 4.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然茶之派100g香辣鸭腿",
+  "barcode": "6935563276040",
+  "category": "零食",
+  "price": 6.0,
+  "memberPrice": null,
+  "stock": 1,
+  "unit": "份",
+  "cost": 4.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然香之派15g肉干五香",
+  "barcode": "6935563286414",
+  "category": "零食",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": 4,
+  "unit": "份",
+  "cost": 1.2
+ },
+ {
+  "supplier": "海然",
+  "name": "海然香之派15g肉干香辣",
+  "barcode": "6935563286728",
+  "category": "零食",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": 16,
+  "unit": "份",
+  "cost": 1.2
+ },
+ {
+  "supplier": "海然",
+  "name": "海然力诚马蹄脆脆肠50g",
+  "barcode": "6941174479039",
+  "category": "零食",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": 14,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卡尔顿香芋无边吐司100g",
+  "barcode": "6974883521287",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 3.0
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卫龙72g大面筋小麻小辣72g",
+  "barcode": "6971258740304",
+  "category": "零食",
+  "price": 5.5,
+  "memberPrice": null,
+  "stock": 10,
+  "unit": "份",
+  "cost": 3.8
+ },
+ {
+  "supplier": "海然",
+  "name": "海然滇二娃40g麻辣土豆片",
+  "barcode": "6975795361022",
+  "category": "食品",
+  "price": 2.5,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 1.8
+ },
+ {
+  "supplier": "海然",
+  "name": "海然脱骨侠无骨鸡爪（泡椒味）",
+  "barcode": "6975750070389",
+  "category": "零食",
+  "price": 3.5,
+  "memberPrice": null,
+  "stock": 27,
+  "unit": "份",
+  "cost": 2.4
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卡尔顿坚果全麦面包90g",
+  "barcode": "6974883525766",
+  "category": "零食",
+  "price": 3.5,
+  "memberPrice": null,
+  "stock": 2,
+  "unit": "份",
+  "cost": 2.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卡尔顿海鸭咸蛋黄酥52g",
+  "barcode": "6927504708406",
+  "category": "零食",
+  "price": 3.0,
+  "memberPrice": null,
+  "stock": 24,
+  "unit": "份",
+  "cost": 2.2
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卫龙魔芋爽（傣味鸡脚风味）",
+  "barcode": "6971258747549",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "海然",
+  "name": "海然滇二娃40g香辣土豆片",
+  "barcode": "6975795361749",
+  "category": "食品",
+  "price": 2.5,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 1.8
+ },
+ {
+  "supplier": "海然",
+  "name": "海然滇二娃土豆片（香辣味）75g",
+  "barcode": "6975795362975",
+  "category": "零食",
+  "price": 6.0,
+  "memberPrice": null,
+  "stock": 2,
+  "unit": "份",
+  "cost": 4.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卡尔顿一口面包75g",
+  "barcode": "6974883522888",
+  "category": "零食",
+  "price": 3.5,
+  "memberPrice": null,
+  "stock": 3,
+  "unit": "份",
+  "cost": 2.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卡尔顿岩烧流心面包100g",
+  "barcode": "6974883523069",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": null,
+  "stock": 1,
+  "unit": "份",
+  "cost": 3.0
+ },
+ {
+  "supplier": "海然",
+  "name": "海然滇二娃土豆片（蕃茄味）75g",
+  "barcode": "6975795363262",
+  "category": "零食",
+  "price": 6.0,
+  "memberPrice": null,
+  "stock": 2,
+  "unit": "份",
+  "cost": 4.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然盐津铺子16g辛辣豆腐",
+  "barcode": "6926104999276",
+  "category": "食品",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 12,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "海然",
+  "name": "海然18g盐津铺子素大牛排麻辣味",
+  "barcode": "6926104983169",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卡尔顿焗烤咸松松面包90g",
+  "barcode": "6974883523793",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": null,
+  "stock": 6,
+  "unit": "份",
+  "cost": 3.0
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卡尔顿黄油土司105g",
+  "barcode": "6974883523007",
+  "category": "零食",
+  "price": 4.5,
+  "memberPrice": null,
+  "stock": 4,
+  "unit": "份",
+  "cost": 3.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然唇动葡萄派（2枚）",
+  "barcode": "6956159711394",
+  "category": "零食",
+  "price": 3.0,
+  "memberPrice": null,
+  "stock": 3,
+  "unit": "份",
+  "cost": 2.0
+ },
+ {
+  "supplier": "海然",
+  "name": "海然滇二娃土豆片（原味）75g",
+  "barcode": "6975795362982",
+  "category": "零食",
+  "price": 6.0,
+  "memberPrice": null,
+  "stock": 3,
+  "unit": "份",
+  "cost": 4.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卡尔顿纯蛋糕120g",
+  "barcode": "6974883523526",
+  "category": "零食",
+  "price": 4.5,
+  "memberPrice": null,
+  "stock": 5,
+  "unit": "份",
+  "cost": 3.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卡尔顿黄油千层面包85g",
+  "barcode": "6974883525728",
+  "category": "零食",
+  "price": 3.5,
+  "memberPrice": null,
+  "stock": 4,
+  "unit": "份",
+  "cost": 2.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然盐津铺子18g黑椒味素大牛排",
+  "barcode": "5926104983190",
+  "category": "食品",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 60,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卡尔顿雪芙面包85g",
+  "barcode": "6974883523045",
+  "category": "零食",
+  "price": 3.5,
+  "memberPrice": null,
+  "stock": 2,
+  "unit": "份",
+  "cost": 2.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卡尔顿青柠威风蛋糕90g",
+  "barcode": "6974883525827",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": null,
+  "stock": 4,
+  "unit": "份",
+  "cost": 3.0
+ },
+ {
+  "supplier": "海然",
+  "name": "海然唇动巧克力派巧克力味（2枚）",
+  "barcode": "6956159710212",
+  "category": "零食",
+  "price": 3.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 2.0
+ },
+ {
+  "supplier": "海然",
+  "name": "海然盐津铺子32g番茄味薯片",
+  "barcode": "6926104958020",
+  "category": "食品",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": -10,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卡尔顿巴氏鲜奶软面包85g",
+  "barcode": "6974883521393",
+  "category": "零食",
+  "price": 3.5,
+  "memberPrice": null,
+  "stock": 3,
+  "unit": "份",
+  "cost": 2.8
+ },
+ {
+  "supplier": "海然",
+  "name": "海然盐津铺子32g烤肉味薯片",
+  "barcode": "6926104969309",
+  "category": "食品",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": -5,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卡尔顿低糖全麦面包88g",
+  "barcode": "6974883525797",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": null,
+  "stock": 2,
+  "unit": "份",
+  "cost": 3.0
+ },
+ {
+  "supplier": "海然",
+  "name": "海然盐津铺子36黑鸭味手撕烤鸭脖",
+  "barcode": "6926104991294",
+  "category": "食品",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": -17,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卡尔顿咸沙拉面包80g",
+  "barcode": "6974883526039",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": null,
+  "stock": 3,
+  "unit": "份",
+  "cost": 3.0
+ },
+ {
+  "supplier": "海然",
+  "name": "海然盐津铺子125g水蜜桃味果冻",
+  "barcode": "6926104978677",
+  "category": "食品",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": -2,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然盐津铺子18g虎皮鱼豆腐",
+  "barcode": "6926104989376",
+  "category": "食品",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 1,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "海然",
+  "name": "海然香之派柠檬酸辣鸡脚筋21g",
+  "barcode": "6935563278020",
+  "category": "零食",
+  "price": 2.5,
+  "memberPrice": null,
+  "stock": 19,
+  "unit": "份",
+  "cost": 1.9
+ },
+ {
+  "supplier": "海然",
+  "name": "海然盐津铺子20g原味松叶蟹柳",
+  "barcode": "6926104998927",
+  "category": "食品",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": 14,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然盐津铺子25g鸡汤味鹌鹑蛋",
+  "barcode": "6926104950789",
+  "category": "食品",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": -5,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卫龙15g风味海带",
+  "barcode": "6935284400281",
+  "category": "食品",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": -17,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卫龙15g麻酱魔芋爽",
+  "barcode": "6971258743886",
+  "category": "食品",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 63,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卫龙15g麻辣魔芋爽",
+  "barcode": "6935284400267",
+  "category": "食品",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": -32,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卫龙15g酸辣魔芋爽",
+  "barcode": "6935284400250",
+  "category": "食品",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": -8,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卫龙15g香辣魔芋爽",
+  "barcode": "6935284400236",
+  "category": "食品",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": -6,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卫龙24g小面筋",
+  "barcode": "6935284488883",
+  "category": "食品",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": -7,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "海然",
+  "name": "海然力诚30g匠烤好蛋盐焗味",
+  "barcode": "6941174483708",
+  "category": "食品",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然力诚20g新手撕蟹柳（原味）",
+  "barcode": "6941174499006",
+  "category": "食品",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": -11,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然力诚20g新手撕蟹柳（香辣）",
+  "barcode": "6941174499013",
+  "category": "食品",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": 6,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然法丽兹34.5g抹茶巧克力味曲奇",
+  "barcode": "6947929611884",
+  "category": "食品",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": 1,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然法丽兹34.5g酸奶巧克力味曲奇",
+  "barcode": "6947929611891",
+  "category": "食品",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然遇吉80g麻辣味花椒锅巴",
+  "barcode": "6974721321246",
+  "category": "食品",
+  "price": 2.5,
+  "memberPrice": null,
+  "stock": -5,
+  "unit": "份",
+  "cost": 2.2
+ },
+ {
+  "supplier": "海然",
+  "name": "海然遇吉80g香辣味花椒锅巴",
+  "barcode": "6974721321185",
+  "category": "食品",
+  "price": 3.5,
+  "memberPrice": null,
+  "stock": -5,
+  "unit": "份",
+  "cost": 2.2
+ },
+ {
+  "supplier": "海然",
+  "name": "海然嚼拌60g森林莓味厚酸奶",
+  "barcode": "6976507172158",
+  "category": "食品",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": -16,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卫龙大面筋香辣味106g",
+  "barcode": "6935284412918",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": null,
+  "stock": 1,
+  "unit": "份",
+  "cost": 2.85
+ },
+ {
+  "supplier": "海然",
+  "name": "海然嚼拌60g草莓车厘子厚酸奶",
+  "barcode": "6976507174015",
+  "category": "食品",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": 1,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然金磨坊20g臭豆腐香辣味",
+  "barcode": "6925678119370",
+  "category": "食品",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": -10,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "海然",
+  "name": "海然金磨坊36g黑猪大肉肠黑胡椒味",
+  "barcode": "6925678122653",
+  "category": "食品",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": -16,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卫龙24g亲嘴烧川香牛肉",
+  "barcode": "6935284455595",
+  "category": "食品",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": -8,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卫龙24g亲嘴烧经典香辣",
+  "barcode": "6935284455557",
+  "category": "食品",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": -23,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "海然",
+  "name": "海然美好家园62g鲜牛奶小酥",
+  "barcode": "6934235625605",
+  "category": "食品",
+  "price": 2.5,
+  "memberPrice": null,
+  "stock": -4,
+  "unit": "份",
+  "cost": 1.8
+ },
+ {
+  "supplier": "海然",
+  "name": "海然友臣肉松棒32g",
+  "barcode": "6958620703907",
+  "category": "零食",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": 1,
+  "unit": "份",
+  "cost": 1.29
+ },
+ {
+  "supplier": "海然",
+  "name": "海然盐津铺子125g青提味果冻",
+  "barcode": "6926104978707",
+  "category": "零食",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": 5,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然盐津铺子大魔王18g火爆魔芋",
+  "barcode": "6926104998484",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": -2,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "海然",
+  "name": "海然盐津铺子4粒肠（香辣味）",
+  "barcode": "6926104940544",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 18,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "海然",
+  "name": "海然友臣33g肉松饼",
+  "barcode": "6958620703341",
+  "category": "零食",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": 3,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卫龙102g大面筋",
+  "barcode": "6935284499995",
+  "category": "零食",
+  "price": 5.0,
+  "memberPrice": null,
+  "stock": 3,
+  "unit": "份",
+  "cost": 3.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卫龙65g大面筋",
+  "barcode": "6935284412178",
+  "category": "零食",
+  "price": 3.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 2.2
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卫龙72g大面筋很麻很辣",
+  "barcode": "6971258740274",
+  "category": "零食",
+  "price": 5.5,
+  "memberPrice": null,
+  "stock": 3,
+  "unit": "份",
+  "cost": 3.8
+ },
+ {
+  "supplier": "海然",
+  "name": "海然汤达人日式豚骨碗面",
+  "barcode": "6925303714840",
+  "category": "零食",
+  "price": 8.0,
+  "memberPrice": null,
+  "stock": 3,
+  "unit": "份",
+  "cost": 6.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然汤达人酸辣豚骨碗面",
+  "barcode": "6925303714857",
+  "category": "零食",
+  "price": 8.0,
+  "memberPrice": null,
+  "stock": 5,
+  "unit": "份",
+  "cost": 6.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然卡尔顿大满足面包90g",
+  "barcode": "6974883525858",
+  "category": "零食",
+  "price": 3.5,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 2.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然三明治面包65g",
+  "barcode": "6974883520532",
+  "category": "零食",
+  "price": 3.0,
+  "memberPrice": null,
+  "stock": 3,
+  "unit": "份",
+  "cost": 2.5
+ },
+ {
+  "supplier": "海然",
+  "name": "海然嚼拌奶酪（草莓味）",
+  "barcode": "6976507171618",
+  "category": "零食",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": 17,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "饮料",
+  "name": "东方树叶茉莉花茶",
+  "barcode": "6921168558049",
+  "category": "饮料",
+  "price": 4.5,
+  "memberPrice": 4.5,
+  "stock": 17,
+  "unit": "份",
+  "cost": 3.53
+ },
+ {
+  "supplier": "饮料",
+  "name": "东方树叶青柑普洱",
+  "barcode": "6921168596348",
+  "category": "饮料",
+  "price": 5.0,
+  "memberPrice": 5.0,
+  "stock": 8,
+  "unit": "份",
+  "cost": 3.53
+ },
+ {
+  "supplier": "饮料",
+  "name": "水溶C100血橙味果汁饮料",
+  "barcode": "6921168560189",
+  "category": "饮料",
+  "price": 5.0,
+  "memberPrice": 5.0,
+  "stock": 15,
+  "unit": "份",
+  "cost": 3.53
+ },
+ {
+  "supplier": "饮料",
+  "name": "水溶C100西柚汁果汁饮料",
+  "barcode": "6921168500970",
+  "category": "饮料",
+  "price": 5.0,
+  "memberPrice": 5.0,
+  "stock": 15,
+  "unit": "份",
+  "cost": 3.53
+ },
+ {
+  "supplier": "饮料",
+  "name": "水溶C100青皮桔味果汁饮料",
+  "barcode": "6921168559244",
+  "category": "饮料",
+  "price": 5.0,
+  "memberPrice": 5.0,
+  "stock": 15,
+  "unit": "份",
+  "cost": 3.53
+ },
+ {
+  "supplier": "饮料",
+  "name": "灌装雪花啤酒",
+  "barcode": "6949352201403",
+  "category": "饮料",
+  "price": 2.5,
+  "memberPrice": 2.5,
+  "stock": 20,
+  "unit": "份",
+  "cost": 1.792
+ },
+ {
+  "supplier": "饮料",
+  "name": "灌装青岛啤酒",
+  "barcode": "6901035610551",
+  "category": "饮料",
+  "price": 2.5,
+  "memberPrice": 2.5,
+  "stock": 6,
+  "unit": "份",
+  "cost": 1.792
+ },
+ {
+  "supplier": "饮料",
+  "name": "茶π柚子绿茶",
+  "barcode": "6921168593576",
+  "category": "饮料",
+  "price": 5.0,
+  "memberPrice": 5.0,
+  "stock": 14,
+  "unit": "份",
+  "cost": 3.53
+ },
+ {
+  "supplier": "饮料",
+  "name": "茶π柠檬红茶",
+  "barcode": "6921168593583",
+  "category": "饮料",
+  "price": 4.5,
+  "memberPrice": 4.5,
+  "stock": 13,
+  "unit": "份",
+  "cost": 3.53
+ },
+ {
+  "supplier": "饮料",
+  "name": "零食芬达橙汁",
+  "barcode": "6928804011326",
+  "category": "饮料",
+  "price": 3.0,
+  "memberPrice": 2.6,
+  "stock": 15,
+  "unit": "份",
+  "cost": 2.125
+ },
+ {
+  "supplier": "饮料",
+  "name": "饮品1.5升百事可乐",
+  "barcode": "6924862101467",
+  "category": "饮料",
+  "price": 7.0,
+  "memberPrice": 7.0,
+  "stock": 6,
+  "unit": "份",
+  "cost": 5.0
+ },
+ {
+  "supplier": "饮料",
+  "name": "饮品东方树叶乌龙茶",
+  "barcode": "6921168558032",
+  "category": "饮料",
+  "price": 4.5,
+  "memberPrice": 4.5,
+  "stock": 53,
+  "unit": "份",
+  "cost": 3.53
+ },
+ {
+  "supplier": "饮料",
+  "name": "饮品农夫山泉矿泉水",
+  "barcode": "6921168509256",
+  "category": "饮料",
+  "price": 1.5,
+  "memberPrice": 1.5,
+  "stock": 79,
+  "unit": "份",
+  "cost": 1.09
+ },
+ {
+  "supplier": "饮料",
+  "name": "饮品康师傅红茶",
+  "barcode": "6921311105014",
+  "category": "饮料",
+  "price": 2.5,
+  "memberPrice": 2.5,
+  "stock": 9,
+  "unit": "份",
+  "cost": 1.93
+ },
+ {
+  "supplier": "饮料",
+  "name": "饮品康师傅绿茶",
+  "barcode": "6921311105168",
+  "category": "饮料",
+  "price": 3.0,
+  "memberPrice": 3.0,
+  "stock": 12,
+  "unit": "份",
+  "cost": 1.93
+ },
+ {
+  "supplier": "饮料",
+  "name": "饮品康师傅茉莉蜜茶",
+  "barcode": "6921311193790",
+  "category": "饮料",
+  "price": 2.5,
+  "memberPrice": 2.5,
+  "stock": 38,
+  "unit": "份",
+  "cost": 1.93
+ },
+ {
+  "supplier": "饮料",
+  "name": "饮品怡宝矿泉水",
+  "barcode": "6901285991219",
+  "category": "饮料",
+  "price": 1.5,
+  "memberPrice": 1.5,
+  "stock": 42,
+  "unit": "份",
+  "cost": 1.09
+ },
+ {
+  "supplier": "饮料",
+  "name": "饮品茶π蜜桃乌龙茶",
+  "barcode": "6921168593569",
+  "category": "饮料",
+  "price": 4.5,
+  "memberPrice": 4.5,
+  "stock": 81,
+  "unit": "份",
+  "cost": 3.53
+ },
+ {
+  "supplier": "饮料",
+  "name": "旺仔牛奶145毫升（超小瓶）",
+  "barcode": "6920584471215",
+  "category": "饮料",
+  "price": 3.0,
+  "memberPrice": 3.0,
+  "stock": -3,
+  "unit": "份",
+  "cost": 2.4
+ },
+ {
+  "supplier": "饮料",
+  "name": "元气森林冰茶（白桃茉莉味）900ml",
+  "barcode": "6937003703413",
+  "category": "饮料",
+  "price": 5.5,
+  "memberPrice": 5.5,
+  "stock": 19,
+  "unit": "份",
+  "cost": 3.75
+ },
+ {
+  "supplier": "饮料",
+  "name": "元气森林气泡水（爆汁白桃味）480ml",
+  "barcode": "6970399920415",
+  "category": "饮料",
+  "price": 5.5,
+  "memberPrice": 5.5,
+  "stock": 31,
+  "unit": "份",
+  "cost": 3.6
+ },
+ {
+  "supplier": "饮料",
+  "name": "外星人电解质水（白桃味）600ml",
+  "barcode": "6937003707114",
+  "category": "饮料",
+  "price": 6.0,
+  "memberPrice": 6.0,
+  "stock": 26,
+  "unit": "份",
+  "cost": 4.334
+ },
+ {
+  "supplier": "饮料",
+  "name": "康师傅百香双柠1L",
+  "barcode": "6973870139795",
+  "category": "饮料",
+  "price": 4.5,
+  "memberPrice": 4.5,
+  "stock": 7,
+  "unit": "份",
+  "cost": 3.25
+ },
+ {
+  "supplier": "饮料",
+  "name": "可口可乐罐装330ml",
+  "barcode": "6928804011142",
+  "category": "饮料",
+  "price": 2.5,
+  "memberPrice": 2.5,
+  "stock": 19,
+  "unit": "份",
+  "cost": 1.58
+ },
+ {
+  "supplier": "饮料",
+  "name": "元气森林冰鲜柠檬水900ml",
+  "barcode": "6937003709583",
+  "category": "饮料",
+  "price": 5.0,
+  "memberPrice": 5.0,
+  "stock": 11,
+  "unit": "份",
+  "cost": 3.75
+ },
+ {
+  "supplier": "饮料",
+  "name": "果然雀巢咖啡丝滑摩卡268ml",
+  "barcode": "6917878036847",
+  "category": "饮料",
+  "price": 5.5,
+  "memberPrice": 5.5,
+  "stock": 3,
+  "unit": "份",
+  "cost": 3.9
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条.麻辣王子73g",
+  "barcode": "6930487920796",
+  "category": "零食",
+  "price": 5.5,
+  "memberPrice": null,
+  "stock": 3,
+  "unit": "份",
+  "cost": 3.8
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条.麻辣王子73g微麻微辣",
+  "barcode": "6930487920802",
+  "category": "零食",
+  "price": 5.5,
+  "memberPrice": null,
+  "stock": 2,
+  "unit": "份",
+  "cost": 3.8
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条三利和（麻酱）鱼",
+  "barcode": "6970996430904",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条三利和泡椒味鱼",
+  "barcode": "6970996430027",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 2,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条三利和糖醋鱼",
+  "barcode": "6970996430034",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 1,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条三利和酱辣鱼",
+  "barcode": "6970996430003",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 16,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条三利和香辣鱼",
+  "barcode": "6970996430041",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 14,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条丛悠爽口脆笋32g（泡椒)",
+  "barcode": "6972562171167",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 8,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条君仔109g劲爽小辣片",
+  "barcode": "6970903432151",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 2.8
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条大漠烤面筋（香辣）",
+  "barcode": "6973475370012",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 0.75
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条大漠烤面筋（黑椒）",
+  "barcode": "6973475370029",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 0.75
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条平汝虾鱼蛋72g",
+  "barcode": "6935911800194",
+  "category": "零食",
+  "price": 3.0,
+  "memberPrice": null,
+  "stock": 3,
+  "unit": "份",
+  "cost": 2.0
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条思乡味102g绝味蹄筋",
+  "barcode": "6958345700182",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": null,
+  "stock": 3,
+  "unit": "份",
+  "cost": 2.8
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条思乡味82g老式大辣片",
+  "barcode": "6958345700205",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 2.8
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条新玉峰双胞胎106g",
+  "barcode": "6974855560030",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 2.8
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条新玉峰花心棒106g",
+  "barcode": "6974855560078",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": null,
+  "stock": 4,
+  "unit": "份",
+  "cost": 2.8
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条爽Q加干捞麻辣烫(香辣)",
+  "barcode": "6974075531193",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条爽Q加干捞麻辣烫(麻辣)",
+  "barcode": "6974075531209",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条盒装麻辣王子",
+  "barcode": "6930487901795",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 39,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条盒装麻辣王子（微麻微辣）",
+  "barcode": "6930487921038",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": -3,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条缺牙齿素牛肚16g香辣",
+  "barcode": "6976481800078",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条缺牙齿脆骨15g香辣",
+  "barcode": "6976481800146",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 42,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条袋飞旺一元八宝里青丝",
+  "barcode": "6934508912494",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": -1,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条飞旺80g长沙臭干子",
+  "barcode": "6934508920390",
+  "category": "零食",
+  "price": 3.0,
+  "memberPrice": null,
+  "stock": 4,
+  "unit": "份",
+  "cost": 2.0
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条飞旺90g八宝丝",
+  "barcode": "6934508920895",
+  "category": "零食",
+  "price": 3.0,
+  "memberPrice": null,
+  "stock": 7,
+  "unit": "份",
+  "cost": 2.0
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条食上功夫52g百搭火辣丝",
+  "barcode": "6974147751399",
+  "category": "零食",
+  "price": 3.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 2.0
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条食上功夫火爆小辣片82g",
+  "barcode": "6975992640210",
+  "category": "零食",
+  "price": 3.0,
+  "memberPrice": null,
+  "stock": 6,
+  "unit": "份",
+  "cost": 2.0
+ },
+ {
+  "supplier": "博达",
+  "name": "博达辣条食上功夫火爆素鸡丝82g",
+  "barcode": "6975992640203",
+  "category": "零食",
+  "price": 3.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 2.0
+ },
+ {
+  "supplier": "博达",
+  "name": "博达信得茂盐焗鸭翅根35g",
+  "barcode": "6975147600632",
+  "category": "零食",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": 3,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "博达",
+  "name": "博达信得茂黑鸭鸭翅根35g",
+  "barcode": "6975147600724",
+  "category": "零食",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": 5,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "博达",
+  "name": "博达信得茂草本鸭翅根35g",
+  "barcode": "6979465090243",
+  "category": "零食",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": 6,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "博达",
+  "name": "博达一元小滑头36g素牛筋",
+  "barcode": "6928822303298",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 2,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "博达",
+  "name": "博达一元小滑头30g薄片",
+  "barcode": "6928822302215",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 7,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "博达",
+  "name": "博达食上麻酱臭干子",
+  "barcode": "6975992640890",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": -1,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "博达",
+  "name": "博达食上火鸡素牛筋",
+  "barcode": "6974251070522",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "博达",
+  "name": "博达张小米30g小米锅巴麻辣味",
+  "barcode": "6975312984390",
+  "category": "零食",
+  "price": 2.6,
+  "memberPrice": null,
+  "stock": 9,
+  "unit": "份",
+  "cost": 2.1
+ },
+ {
+  "supplier": "博达",
+  "name": "博达张小米30g小米锅巴五香味",
+  "barcode": "6975312984505",
+  "category": "零食",
+  "price": 2.6,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 2.1
+ },
+ {
+  "supplier": "博达",
+  "name": "博达上口俏酒香花生（180g）",
+  "barcode": "6927182501900",
+  "category": "零食",
+  "price": 6.0,
+  "memberPrice": null,
+  "stock": 2,
+  "unit": "份",
+  "cost": 4.8
+ },
+ {
+  "supplier": "博达",
+  "name": "博达贤哥一根嫩笋30g",
+  "barcode": "6959836929754",
+  "category": "零食",
+  "price": 2.0,
+  "memberPrice": null,
+  "stock": 18,
+  "unit": "份",
+  "cost": 1.5
+ },
+ {
+  "supplier": "博达",
+  "name": "博达来根华子辣条4.5g",
+  "barcode": "6977561560011",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": null,
+  "stock": 0,
+  "unit": "份",
+  "cost": 0.7
+ },
+ {
+  "supplier": "果然",
+  "name": "果然24G脆香米牛奶巧克力",
+  "barcode": "6914973602908",
+  "category": "零食",
+  "price": 5.0,
+  "memberPrice": 5.0,
+  "stock": 3,
+  "unit": "份",
+  "cost": 2.93
+ },
+ {
+  "supplier": "果然",
+  "name": "果然乐事奇多玉米棒日式牛排味",
+  "barcode": "6924743922747",
+  "category": "零食",
+  "price": 3.5,
+  "memberPrice": 3.5,
+  "stock": 5,
+  "unit": "份",
+  "cost": 2.8
+ },
+ {
+  "supplier": "果然",
+  "name": "果然乐事奇多玉米棒美式火(KT)",
+  "barcode": "6924743922730",
+  "category": "零食",
+  "price": 3.5,
+  "memberPrice": 3.5,
+  "stock": 5,
+  "unit": "份",
+  "cost": 2.8
+ },
+ {
+  "supplier": "果然",
+  "name": "果然十分奥利奥原味97克盒装饼干",
+  "barcode": "6901668935724",
+  "category": "食品",
+  "price": 7.0,
+  "memberPrice": 7.0,
+  "stock": 2,
+  "unit": "份",
+  "cost": 4.8
+ },
+ {
+  "supplier": "果然",
+  "name": "果然十分奥利奥缤纷双果味夹心饼干蓝莓味+树莓味97g",
+  "barcode": "6901668005915",
+  "category": "食品",
+  "price": 7.0,
+  "memberPrice": 7.0,
+  "stock": 2,
+  "unit": "份",
+  "cost": 4.71
+ },
+ {
+  "supplier": "果然",
+  "name": "果然十分奥利奥草莓",
+  "barcode": "6901668935748",
+  "category": "食品",
+  "price": 7.0,
+  "memberPrice": 7.0,
+  "stock": 2,
+  "unit": "份",
+  "cost": 4.8
+ },
+ {
+  "supplier": "果然",
+  "name": "果然奥利奥冰淇淋夹心抹茶味97g",
+  "barcode": "6901668005892",
+  "category": "食品",
+  "price": 7.0,
+  "memberPrice": 7.0,
+  "stock": 7,
+  "unit": "份",
+  "cost": 5.45
+ },
+ {
+  "supplier": "果然",
+  "name": "果然奥利奥奶酪味97克盒装饼干",
+  "barcode": "6901668937919",
+  "category": "食品",
+  "price": 7.0,
+  "memberPrice": 7.0,
+  "stock": -4,
+  "unit": "份",
+  "cost": 5.45
+ },
+ {
+  "supplier": "果然",
+  "name": "果然奧利奧迷你原味小餅乾55g",
+  "barcode": "6901668053893",
+  "category": "食品",
+  "price": 6.5,
+  "memberPrice": 5.5,
+  "stock": 4,
+  "unit": "份",
+  "cost": 4.2
+ },
+ {
+  "supplier": "果然",
+  "name": "果然奧利奧迷你巧克力餅乾",
+  "barcode": "6901668053916",
+  "category": "食品",
+  "price": 7.0,
+  "memberPrice": 7.0,
+  "stock": 4,
+  "unit": "份",
+  "cost": 4.2
+ },
+ {
+  "supplier": "果然",
+  "name": "果然白象麻辣小龙虾拌面115g",
+  "barcode": "6935270641254",
+  "category": "零食",
+  "price": 4.8,
+  "memberPrice": 4.8,
+  "stock": 1,
+  "unit": "份",
+  "cost": 4.0
+ },
+ {
+  "supplier": "果然",
+  "name": "果然脆香米牛奶巧克力12g",
+  "barcode": "69029981",
+  "category": "食品",
+  "price": 2.0,
+  "memberPrice": 2.0,
+  "stock": 7,
+  "unit": "份",
+  "cost": 1.48
+ },
+ {
+  "supplier": "果然",
+  "name": "果然十分卫龙面筋16g（小麻小辣）",
+  "barcode": "6971258740373",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": 1.0,
+  "stock": 18,
+  "unit": "份",
+  "cost": 0.68
+ },
+ {
+  "supplier": "果然",
+  "name": "果然十分好丽友薯愿红酒牛排味40g",
+  "barcode": "6920907830804",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": 4.0,
+  "stock": 5,
+  "unit": "份",
+  "cost": 2.8
+ },
+ {
+  "supplier": "果然",
+  "name": "果然波力海苔4.5g",
+  "barcode": "6918598028013",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": 4.0,
+  "stock": 0,
+  "unit": "份",
+  "cost": 2.77
+ },
+ {
+  "supplier": "果然",
+  "name": "果然炫迈无糖口香糖罐装草莓味（40粒）",
+  "barcode": "6924513908001",
+  "category": "零食",
+  "price": 9.0,
+  "memberPrice": 9.0,
+  "stock": 1,
+  "unit": "份",
+  "cost": 7.7
+ },
+ {
+  "supplier": "果然",
+  "name": "果然菇菇珍好苏打饼干（火爆鱿鱼味）80g",
+  "barcode": "6928098103721",
+  "category": "零食",
+  "price": 3.5,
+  "memberPrice": 3.5,
+  "stock": 5,
+  "unit": "份",
+  "cost": 2.52
+ },
+ {
+  "supplier": "果然",
+  "name": "果然佳龙辣条五谷杂粮22g",
+  "barcode": "6923841910434",
+  "category": "零食",
+  "price": 0.5,
+  "memberPrice": 0.5,
+  "stock": 32,
+  "unit": "份",
+  "cost": 0.33
+ },
+ {
+  "supplier": "果然",
+  "name": "果然十分合味道桶面海鲜风味74g",
+  "barcode": "6917935002150",
+  "category": "零食",
+  "price": 6.0,
+  "memberPrice": 6.0,
+  "stock": 2,
+  "unit": "份",
+  "cost": 4.5
+ },
+ {
+  "supplier": "果然",
+  "name": "果然十分炫迈无糖颗粒口香糖薄荷味14g",
+  "barcode": "6924513902542",
+  "category": "零食",
+  "price": 2.5,
+  "memberPrice": 2.5,
+  "stock": 13,
+  "unit": "份",
+  "cost": 1.65
+ },
+ {
+  "supplier": "果然",
+  "name": "果然炫迈无糖口香糖罐装薄荷味（40粒）",
+  "barcode": "6924513909244",
+  "category": "零食",
+  "price": 9.0,
+  "memberPrice": 9.0,
+  "stock": 0,
+  "unit": "份",
+  "cost": 7.7
+ },
+ {
+  "supplier": "果然",
+  "name": "果然鲍汁味卤蛋30g",
+  "barcode": "6976669420005",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": 1.0,
+  "stock": 0,
+  "unit": "份",
+  "cost": 0.75
+ },
+ {
+  "supplier": "果然",
+  "name": "果然十分合味道桶面虾仁风味74g",
+  "barcode": "6917935002242",
+  "category": "零食",
+  "price": 6.0,
+  "memberPrice": 6.0,
+  "stock": 1,
+  "unit": "份",
+  "cost": 4.5
+ },
+ {
+  "supplier": "果然",
+  "name": "果然十分炫迈无糖颗粒口香糖草莓味14g",
+  "barcode": "6924513902665",
+  "category": "零食",
+  "price": 2.5,
+  "memberPrice": 2.5,
+  "stock": 15,
+  "unit": "份",
+  "cost": 1.65
+ },
+ {
+  "supplier": "果然",
+  "name": "果然奇多妙脆角肉酱味（40g）",
+  "barcode": "6924743920415",
+  "category": "零食",
+  "price": 5.0,
+  "memberPrice": 5.0,
+  "stock": 6,
+  "unit": "份",
+  "cost": 2.65
+ },
+ {
+  "supplier": "果然",
+  "name": "果然来一口PK脆泰国酱鸭味75g",
+  "barcode": "6931552204841",
+  "category": "零食",
+  "price": 5.0,
+  "memberPrice": 5.0,
+  "stock": 2,
+  "unit": "份",
+  "cost": 3.33
+ },
+ {
+  "supplier": "果然",
+  "name": "果然盐焗鸡蛋30g",
+  "barcode": "6976669420364",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": 1.0,
+  "stock": 5,
+  "unit": "份",
+  "cost": 0.75
+ },
+ {
+  "supplier": "果然",
+  "name": "果然十分合味道桶面香辣海鲜风味74g",
+  "barcode": "6917935002181",
+  "category": "零食",
+  "price": 6.0,
+  "memberPrice": 6.0,
+  "stock": 2,
+  "unit": "份",
+  "cost": 4.5
+ },
+ {
+  "supplier": "果然",
+  "name": "果然旺旺小小酥黑胡椒味60g",
+  "barcode": "6909995103694",
+  "category": "零食",
+  "price": 4.5,
+  "memberPrice": 4.5,
+  "stock": 3,
+  "unit": "份",
+  "cost": 3.12
+ },
+ {
+  "supplier": "果然",
+  "name": "果然盐津铺子18g奥尔良味迷你肠",
+  "barcode": "4926104940537",
+  "category": "食品",
+  "price": 1.0,
+  "memberPrice": 1.0,
+  "stock": 80,
+  "unit": "份",
+  "cost": 0.75
+ },
+ {
+  "supplier": "果然",
+  "name": "果然纳滋宝黑松露火腿苏打饼干88g",
+  "barcode": "6974659160955",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": 4.0,
+  "stock": 3,
+  "unit": "份",
+  "cost": 3.01
+ },
+ {
+  "supplier": "果然",
+  "name": "果然十分豫竹蟹黄拌面132g",
+  "barcode": "6920189009332",
+  "category": "零食",
+  "price": 5.0,
+  "memberPrice": 5.0,
+  "stock": 10,
+  "unit": "份",
+  "cost": 4.0
+ },
+ {
+  "supplier": "果然",
+  "name": "果然菇菇珍好苏打饼干黑松露味（68g）",
+  "barcode": "6928098103875",
+  "category": "零食",
+  "price": 3.5,
+  "memberPrice": 3.5,
+  "stock": 1,
+  "unit": "份",
+  "cost": 2.52
+ },
+ {
+  "supplier": "果然",
+  "name": "果然雅思嘉北海道牛乳小园饼（海盐味）80g",
+  "barcode": "6941659891592",
+  "category": "零食",
+  "price": 3.0,
+  "memberPrice": 3.0,
+  "stock": 1,
+  "unit": "份",
+  "cost": 1.73
+ },
+ {
+  "supplier": "果然",
+  "name": "果然鲲乐博士素牛筋",
+  "barcode": "6955879391015",
+  "category": "零食",
+  "price": 0.5,
+  "memberPrice": 0.5,
+  "stock": 5,
+  "unit": "份",
+  "cost": 0.33
+ },
+ {
+  "supplier": "果然",
+  "name": "果然双仔辣条牛筋传说18g",
+  "barcode": "6958242251091",
+  "category": "零食",
+  "price": 0.5,
+  "memberPrice": 0.5,
+  "stock": 18,
+  "unit": "份",
+  "cost": 0.33
+ },
+ {
+  "supplier": "果然",
+  "name": "果然雅思嘉日式小圆饼（海盐味）80g",
+  "barcode": "6941659891349",
+  "category": "零食",
+  "price": 3.0,
+  "memberPrice": 3.0,
+  "stock": 0,
+  "unit": "份",
+  "cost": 1.73
+ },
+ {
+  "supplier": "果然",
+  "name": "果然领航小鱼小虾（32g）",
+  "barcode": "6941608106524",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": 1.0,
+  "stock": 3,
+  "unit": "份",
+  "cost": 0.75
+ },
+ {
+  "supplier": "果然",
+  "name": "果然余同乐北京烤鸭",
+  "barcode": "6971082140042",
+  "category": "零食",
+  "price": 0.5,
+  "memberPrice": 0.5,
+  "stock": 0,
+  "unit": "份",
+  "cost": 0.33
+ },
+ {
+  "supplier": "果然",
+  "name": "果然余同乐口水鸡",
+  "barcode": "6971082140028",
+  "category": "零食",
+  "price": 0.5,
+  "memberPrice": 0.5,
+  "stock": 15,
+  "unit": "份",
+  "cost": 0.33
+ },
+ {
+  "supplier": "果然",
+  "name": "果然琥珀锅巴麻辣味45g",
+  "barcode": "6936605800032",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": 1.0,
+  "stock": 15,
+  "unit": "份",
+  "cost": 0.68
+ },
+ {
+  "supplier": "果然",
+  "name": "果然琥珀锅巴牛肉味45g",
+  "barcode": "6936605800278",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": 1.0,
+  "stock": 10,
+  "unit": "份",
+  "cost": 0.68
+ },
+ {
+  "supplier": "果然",
+  "name": "果然旺旺小小酥葱香鸡肉味60g",
+  "barcode": "6909995103687",
+  "category": "零食",
+  "price": 4.5,
+  "memberPrice": 4.5,
+  "stock": 4,
+  "unit": "份",
+  "cost": 3.12
+ },
+ {
+  "supplier": "果然",
+  "name": "果然辈儿香八爪烧麻辣味40g",
+  "barcode": "6937821510712",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": 1.0,
+  "stock": 22,
+  "unit": "份",
+  "cost": 0.75
+ },
+ {
+  "supplier": "果然",
+  "name": "果然旺旺浪味仙蔬菜味30g",
+  "barcode": "6905734301017",
+  "category": "零食",
+  "price": 4.5,
+  "memberPrice": 4.5,
+  "stock": 15,
+  "unit": "份",
+  "cost": 3.02
+ },
+ {
+  "supplier": "果然",
+  "name": "果然旺旺浪味仙蔬菜味70g",
+  "barcode": "6905734301031",
+  "category": "零食",
+  "price": 7.0,
+  "memberPrice": 7.0,
+  "stock": 7,
+  "unit": "份",
+  "cost": 4.91
+ },
+ {
+  "supplier": "果然",
+  "name": "果然一根葱葱香味13g",
+  "barcode": "6970716697099",
+  "category": "零食",
+  "price": 0.5,
+  "memberPrice": 0.5,
+  "stock": 82,
+  "unit": "份",
+  "cost": 0.33
+ },
+ {
+  "supplier": "果然",
+  "name": "果然步步升南京板鸭味20g",
+  "barcode": "6926633400328",
+  "category": "零食",
+  "price": 0.5,
+  "memberPrice": 0.5,
+  "stock": -1,
+  "unit": "份",
+  "cost": 0.33
+ },
+ {
+  "supplier": "果然",
+  "name": "果然好丽友好有趣蜜蜂黄油味45g",
+  "barcode": "6920907810721",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": 4.0,
+  "stock": 3,
+  "unit": "份",
+  "cost": 2.61
+ },
+ {
+  "supplier": "果然",
+  "name": "果然好丽友好有趣蜜蜂黄油味70g",
+  "barcode": "6920907823684",
+  "category": "零食",
+  "price": 6.5,
+  "memberPrice": 6.5,
+  "stock": 0,
+  "unit": "份",
+  "cost": 4.42
+ },
+ {
+  "supplier": "果然",
+  "name": "果然好丽友薯愿番茄味40g",
+  "barcode": "6920907830828",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": 4.0,
+  "stock": 4,
+  "unit": "份",
+  "cost": 2.66
+ },
+ {
+  "supplier": "果然",
+  "name": "果然好丽友薯愿韩式泡菜味40g",
+  "barcode": "6920907830767",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": 4.0,
+  "stock": 2,
+  "unit": "份",
+  "cost": 2.66
+ },
+ {
+  "supplier": "果然",
+  "name": "果然好丽友呀土豆番茄酱味70g",
+  "barcode": "6920907808537",
+  "category": "零食",
+  "price": 6.5,
+  "memberPrice": 6.5,
+  "stock": 4,
+  "unit": "份",
+  "cost": 4.41
+ },
+ {
+  "supplier": "果然",
+  "name": "果然好丽友呀土豆滋香烤鸡味70g",
+  "barcode": "6920907808612",
+  "category": "零食",
+  "price": 6.5,
+  "memberPrice": 6.5,
+  "stock": 4,
+  "unit": "份",
+  "cost": 4.41
+ },
+ {
+  "supplier": "果然",
+  "name": "果然上好佳草莓栗虾条32g",
+  "barcode": "6926265304346",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": 4.0,
+  "stock": 1,
+  "unit": "份",
+  "cost": 2.66
+ },
+ {
+  "supplier": "果然",
+  "name": "果然上好佳虾片30g",
+  "barcode": "6926265307385",
+  "category": "零食",
+  "price": 5.0,
+  "memberPrice": 5.0,
+  "stock": 12,
+  "unit": "份",
+  "cost": 2.66
+ },
+ {
+  "supplier": "果然",
+  "name": "果然上好佳虾片32g",
+  "barcode": "6926265307002",
+  "category": "零食",
+  "price": 5.0,
+  "memberPrice": 5.0,
+  "stock": 6,
+  "unit": "份",
+  "cost": 2.66
+ },
+ {
+  "supplier": "果然",
+  "name": "果然上好佳鱼果42g",
+  "barcode": "6926265307132",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": 4.0,
+  "stock": 2,
+  "unit": "份",
+  "cost": 2.66
+ },
+ {
+  "supplier": "果然",
+  "name": "果然好丽友浪里个浪焦糖鸡米花味65g",
+  "barcode": "6920907827040",
+  "category": "零食",
+  "price": 7.0,
+  "memberPrice": 7.0,
+  "stock": 3,
+  "unit": "份",
+  "cost": 4.64
+ },
+ {
+  "supplier": "果然",
+  "name": "果然好丽友浪里个浪焦糖玉米浓汤味40g",
+  "barcode": "6920907813388",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": 4.0,
+  "stock": 1,
+  "unit": "份",
+  "cost": 2.85
+ },
+ {
+  "supplier": "果然",
+  "name": "果然好丽友呀土豆番茄酱味40g",
+  "barcode": "6920907808513",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": 4.0,
+  "stock": 3,
+  "unit": "份",
+  "cost": 2.55
+ },
+ {
+  "supplier": "果然",
+  "name": "果然乐事薯片意大利香浓红绘味40g",
+  "barcode": "6924743915084",
+  "category": "零食",
+  "price": 3.5,
+  "memberPrice": 4.0,
+  "stock": 14,
+  "unit": "份",
+  "cost": 2.57
+ },
+ {
+  "supplier": "果然",
+  "name": "果然琥珀小米锅巴麻辣味70g",
+  "barcode": "6936605801282",
+  "category": "零食",
+  "price": 2.0,
+  "memberPrice": 2.0,
+  "stock": 0,
+  "unit": "份",
+  "cost": 1.43
+ },
+ {
+  "supplier": "果然",
+  "name": "果然琥珀小米锅巴牛肉味70g",
+  "barcode": "6936605801299",
+  "category": "零食",
+  "price": 3.0,
+  "memberPrice": 3.0,
+  "stock": 0,
+  "unit": "份",
+  "cost": 1.43
+ },
+ {
+  "supplier": "果然",
+  "name": "果然上好佳洋葱圈30g",
+  "barcode": "6926265309518",
+  "category": "零食",
+  "price": 5.0,
+  "memberPrice": 5.0,
+  "stock": 4,
+  "unit": "份",
+  "cost": 2.65
+ },
+ {
+  "supplier": "果然",
+  "name": "果然乐事薯片墨西哥鸡汁番茄味70g",
+  "barcode": "6924743919242",
+  "category": "零食",
+  "price": 6.0,
+  "memberPrice": 6.0,
+  "stock": 13,
+  "unit": "份",
+  "cost": 4.26
+ },
+ {
+  "supplier": "果然",
+  "name": "果然脆司令奥尔良鸡翅味53g",
+  "barcode": "6920189004290",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": 1.0,
+  "stock": 146,
+  "unit": "份",
+  "cost": 0.76
+ },
+ {
+  "supplier": "果然",
+  "name": "果然脆司令黑椒牛排53g",
+  "barcode": "6920189004436",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": 1.0,
+  "stock": 31,
+  "unit": "份",
+  "cost": 0.76
+ },
+ {
+  "supplier": "果然",
+  "name": "果然脆司令辣条风味53g",
+  "barcode": "6920189018533",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": 1.0,
+  "stock": 0,
+  "unit": "份",
+  "cost": 0.76
+ },
+ {
+  "supplier": "果然",
+  "name": "果然脆司令酸甜番茄味53g",
+  "barcode": "6920189028472",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": 1.0,
+  "stock": 0,
+  "unit": "份",
+  "cost": 0.76
+ },
+ {
+  "supplier": "果然",
+  "name": "果然脆司令芝麻酥脆原味53g",
+  "barcode": "6920189009592",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": 1.0,
+  "stock": 16,
+  "unit": "份",
+  "cost": 0.76
+ },
+ {
+  "supplier": "果然",
+  "name": "果然十分奥利奥经典原味夹心饼干48.5g",
+  "barcode": "6901668935649",
+  "category": "零食",
+  "price": 5.0,
+  "memberPrice": 5.0,
+  "stock": 3,
+  "unit": "份",
+  "cost": 2.6
+ },
+ {
+  "supplier": "果然",
+  "name": "果然魔法士干脆面巴西烤肉味35g",
+  "barcode": "6901715297829",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": 1.0,
+  "stock": 37,
+  "unit": "份",
+  "cost": 0.76
+ },
+ {
+  "supplier": "果然",
+  "name": "果然魔法士干脆面香烤鸡翅味35g",
+  "barcode": "6901715297843",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": 1.0,
+  "stock": 34,
+  "unit": "份",
+  "cost": 0.76
+ },
+ {
+  "supplier": "果然",
+  "name": "果然好丽友呀土豆滋香烤鸡40g",
+  "barcode": "6920907808599",
+  "category": "零食",
+  "price": 4.0,
+  "memberPrice": 4.0,
+  "stock": 5,
+  "unit": "份",
+  "cost": 2.68
+ },
+ {
+  "supplier": "果然",
+  "name": "果然嘉顿威化饼干草莓味",
+  "barcode": "6902227019428",
+  "category": "零食",
+  "price": 8.0,
+  "memberPrice": 8.0,
+  "stock": 0,
+  "unit": "份",
+  "cost": 5.5
+ },
+ {
+  "supplier": "果然",
+  "name": "果然嘉顿威化饼干巧克力味",
+  "barcode": "6902227019442",
+  "category": "零食",
+  "price": 8.0,
+  "memberPrice": 8.0,
+  "stock": 0,
+  "unit": "份",
+  "cost": 5.5
+ },
+ {
+  "supplier": "果然",
+  "name": "果然奥利奥浓醇巧克力夹心饼干（48.5g）",
+  "barcode": "6901668935663",
+  "category": "零食",
+  "price": 5.0,
+  "memberPrice": 5.0,
+  "stock": 0,
+  "unit": "份",
+  "cost": 2.6
+ },
+ {
+  "supplier": "果然",
+  "name": "果然上好佳薯条番茄味35g",
+  "barcode": "6926265307408",
+  "category": "零食",
+  "price": 3.5,
+  "memberPrice": 3.5,
+  "stock": 2,
+  "unit": "份",
+  "cost": 2.65
+ },
+ {
+  "supplier": "果然",
+  "name": "果然合味道桶香辣味",
+  "barcode": "6917935002280",
+  "category": "零食",
+  "price": 6.0,
+  "memberPrice": 6.0,
+  "stock": 0,
+  "unit": "份",
+  "cost": 4.5
+ },
+ {
+  "supplier": "果然",
+  "name": "果然合味道桶面猪骨浓汤味",
+  "barcode": "6917935002297",
+  "category": "零食",
+  "price": 6.0,
+  "memberPrice": 6.0,
+  "stock": 3,
+  "unit": "份",
+  "cost": 4.5
+ },
+ {
+  "supplier": "果然",
+  "name": "果然合味道桶面五香牛肉味",
+  "barcode": "6917935002167",
+  "category": "零食",
+  "price": 6.0,
+  "memberPrice": 6.0,
+  "stock": 2,
+  "unit": "份",
+  "cost": 4.5
+ },
+ {
+  "supplier": "果然",
+  "name": "果然十分卫龙面筋16g（很麻很辣）",
+  "barcode": "6971258740380",
+  "category": "零食",
+  "price": 1.0,
+  "memberPrice": 1.0,
+  "stock": 27,
+  "unit": "份",
+  "cost": 0.68
+ },
+ {
+  "supplier": "果然",
+  "name": "果然乐事薯片炸鱼薯条味70g",
+  "barcode": "6924743938069",
+  "category": "零食",
+  "price": 7.0,
+  "memberPrice": 7.0,
+  "stock": 0,
+  "unit": "份",
+  "cost": 5.1
+ },
+ {
+  "supplier": "果然",
+  "name": "果然星巴克小咖低糖拿铁200ml",
+  "barcode": "6970870272804",
+  "category": "零食",
+  "price": 6.5,
+  "memberPrice": 6.5,
+  "stock": 0,
+  "unit": "份",
+  "cost": 4.5
+ },
+ {
+  "supplier": "果然",
+  "name": "果然星巴克小咖臻果拿铁200ML",
+  "barcode": "6970870272873",
+  "category": "零食",
+  "price": 6.0,
+  "memberPrice": 6.0,
+  "stock": 8,
+  "unit": "份",
+  "cost": 4.3
+ },
+ {
+  "supplier": "果然",
+  "name": "果然瑞幸经典美式咖啡饮料300ml",
+  "barcode": "6942564501019",
+  "category": "零食",
+  "price": 6.0,
+  "memberPrice": 6.0,
+  "stock": 9,
+  "unit": "份",
+  "cost": 4.54
+ },
+ {
+  "supplier": "果然",
+  "name": "果然瑞幸生椰拿铁咖啡饮料300ml",
+  "barcode": "6942564501057",
+  "category": "零食",
+  "price": 6.0,
+  "memberPrice": 6.0,
+  "stock": 4,
+  "unit": "份",
+  "cost": 4.54
+ },
+ {
+  "supplier": "果然",
+  "name": "果然瑞幸柚C美式咖啡饮料300ml",
+  "barcode": "6942564501033",
+  "category": "零食",
+  "price": 6.0,
+  "memberPrice": 6.0,
+  "stock": 14,
+  "unit": "份",
+  "cost": 4.54
+ },
+ {
+  "supplier": "果然",
+  "name": "果然雀巢咖啡丝滑摩卡268ml",
+  "barcode": "6917878036847",
+  "category": "饮料",
+  "price": 5.5,
+  "memberPrice": 5.5,
+  "stock": 3,
+  "unit": "份",
+  "cost": 3.9
+ }
+];
+</script>
+<script>
+(function(){
+  const P = window.PRODUCTS || [];
+  const PAGE = 40;
+  const STORE_KEY = "restock_cart_v1";
+
+  // ---- state ----
+  const state = {
+    q:"", sup:"全部", cat:"全部", quick:null,
+    page:1,
+    cart: loadCart()  // {key: qty}
+  };
+
+  function loadCart(){
+    try{ return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }catch(e){ return {}; }
+  }
+  function saveCart(){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(state.cart)); }catch(e){}
+  }
+  // stable key for a product
+  function keyOf(p){ return (p.barcode && p.barcode!=="") ? p.barcode : (p.supplier+"|"+p.name); }
+
+  // ---- derive suppliers & categories ----
+  const suppliers = ["全部", ...Array.from(new Set(P.map(p=>p.supplier)))];
+  const categories = ["全部", ...Array.from(new Set(P.map(p=>p.category).filter(Boolean)))];
+
+  // ---- stats ----
+  const total = P.length;
+  const zero = P.filter(p=>p.stock===0).length;
+  const low = P.filter(p=>p.stock>0 && p.stock<=5).length;
+  document.getElementById("stTotal").textContent = total;
+  document.getElementById("stZero").textContent = zero;
+  document.getElementById("stLow").textContent = low;
+  document.getElementById("stSup").textContent = suppliers.length-1;
+
+  // ---- build chips ----
+  const supWrap = document.getElementById("supChips");
+  suppliers.forEach(s=>{
+    const c = document.createElement("span");
+    c.className = "chip" + (s==="全部"?" active":"");
+    c.textContent = s;
+    c.onclick = ()=>{ state.sup=s; state.page=1; syncChips(); render(); };
+    supWrap.appendChild(c);
+  });
+  const catWrap = document.getElementById("catChips");
+  categories.forEach(cat=>{
+    const c = document.createElement("span");
+    c.className = "chip" + (cat==="全部"?" active":"");
+    c.textContent = cat;
+    c.onclick = ()=>{ state.cat=cat; state.page=1; syncChips(); render(); };
+    catWrap.appendChild(c);
+  });
+  document.querySelectorAll('.chip[data-q]').forEach(c=>{
+    c.onclick = ()=>{
+      const q = c.getAttribute("data-q");
+      state.quick = (state.quick===q)? null : q;
+      state.page=1; syncChips(); render();
+    };
+  });
+
+  function syncChips(){
+    supWrap.querySelectorAll('.chip').forEach(c=> c.classList.toggle('active', c.textContent===state.sup));
+    catWrap.querySelectorAll('.chip').forEach(c=> c.classList.toggle('active', c.textContent===state.cat));
+    document.querySelectorAll('.chip[data-q]').forEach(c=> c.classList.toggle('active', c.getAttribute('data-q')===state.quick));
+  }
+
+  // ---- search ----
+  document.getElementById("q").addEventListener("input", e=>{
+    state.q = e.target.value.trim().toLowerCase(); state.page=1; render();
+  });
+
+  // ---- filtering ----
+  function filtered(){
+    return P.filter(p=>{
+      if(state.sup!=="全部" && p.supplier!==state.sup) return false;
+      if(state.cat!=="全部" && p.category!==state.cat) return false;
+      if(state.quick==="zero" && p.stock!==0) return false;
+      if(state.quick==="low" && !(p.stock>0 && p.stock<=5)) return false;
+      if(state.q){
+        const hay = (p.name+" "+(p.barcode||"")).toLowerCase();
+        if(!hay.includes(state.q)) return false;
+      }
+      return true;
+    });
+  }
+
+  function fmt(n){ return (n==null)? "—" : Number(n).toFixed(2); }
+
+  function stockBadge(p){
+    if(p.stock===0) return '<span class="stock" style="color:var(--danger)">0</span><span class="badge zero">缺货</span>';
+    if(p.stock<=5) return '<span class="stock" style="color:var(--warn)">'+p.stock+'</span><span class="badge low">低</span>';
+    return '<span class="stock" style="color:var(--ok)">'+p.stock+'</span><span class="badge ok">充足</span>';
+  }
+
+  // 进货单位：按业务规则推导（仅用于发送补货单，不影响查询目录的销售单位）
+  function orderUnit(p){
+    const n = p.name || "";
+    const price = (p.price==null) ? null : Math.round(p.price*100)/100;
+    const sup = p.supplier || "";
+    const cat = p.category || "";
+    if(n.includes("乐事")){
+      if(price===7) return "盒";
+      if(price===6 || price===3.5) return "袋";
+    }
+    if(n.includes("浪味仙")||n.includes("妙脆角")||n.includes("呀土豆")||n.includes("上好佳")) return "袋";
+    if(n.includes("薯愿")) return "盒";
+    if(n.includes("奥利奥")) return "盒";
+    if(n.includes("面包")) return "袋";
+    if(n.includes("锅巴")) return "袋";
+    if(sup==="饮料" || cat.includes("饮料")) return "件";
+    if(price===1 || price===0.5) return "盒";
+    return p.unit || "件";
+  }
+
+  // ---- render table ----
+  const tbody = document.getElementById("tbody");
+  const emptyState = document.getElementById("emptyState");
+  const resCount = document.getElementById("resCount");
+
+  function render(){
+    const list = filtered();
+    resCount.textContent = list.length;
+    const pages = Math.max(1, Math.ceil(list.length/PAGE));
+    if(state.page>pages) state.page = pages;
+    const start = (state.page-1)*PAGE;
+    const slice = list.slice(start, start+PAGE);
+
+    tbody.innerHTML = "";
+    if(list.length===0){
+      emptyState.style.display="block";
+    } else {
+      emptyState.style.display="none";
+      slice.forEach(p=>{
+        const k = keyOf(p);
+        const qty = state.cart[k] || 0;
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          '<td><div class="pname">'+esc(p.name)+'</div>'+(p.barcode?'<div class="pbarcode">'+esc(p.barcode)+'</div>':'')+'</td>'+
+          '<td data-label="供货商"><span class="sup-tag">'+esc(p.supplier)+'</span></td>'+
+          '<td data-label="分组">'+(p.category?'<span class="tag">'+esc(p.category)+'</span>':'—')+'</td>'+
+          '<td data-label="售价" class="price">¥'+fmt(p.price)+'</td>'+
+          '<td data-label="会员价" class="mem">'+(p.memberPrice!=null?'¥'+fmt(p.memberPrice):'—')+'</td>'+
+          '<td data-label="库存">'+stockBadge(p)+'</td>'+
+          '<td data-label="单位" class="num-cell">'+(p.unit||'—')+'</td>'+
+          '<td data-label="成本" class="num-cell">¥'+fmt(p.cost)+'</td>'+
+          '<td data-label="补货数量" style="text-align:right">'+stepperHTML(k,qty,p)+'</td>';
+        tbody.appendChild(tr);
+      });
+      bindSteppers();
+    }
+    document.getElementById("pgInfo").textContent = state.page+" / "+pages;
+    document.getElementById("prevPage").disabled = state.page<=1;
+    document.getElementById("nextPage").disabled = state.page>=pages;
+  }
+
+  function stepperHTML(k,qty,p){
+    const ou = p ? orderUnit(p) : '';
+    return '<div class="stepper" data-k="'+esc(k)+'">'+
+      '<button data-act="dec"'+(qty<=0?' disabled':'')+' aria-label="减少">−</button>'+
+      '<input value="'+qty+'" inputmode="numeric" readonly />'+
+      '<button data-act="inc" aria-label="增加">+</button></div>'+
+      (ou?'<div class="ou-hint">进货 '+ou+'</div>':'');
+  }
+  function bindSteppers(){
+    tbody.querySelectorAll('.stepper').forEach(s=>{
+      const k = s.getAttribute("data-k");
+      s.querySelector('[data-act="inc"]').onclick = ()=> setQty(k, (state.cart[k]||0)+1);
+      s.querySelector('[data-act="dec"]').onclick = ()=> setQty(k, Math.max(0,(state.cart[k]||0)-1));
+    });
+  }
+  function setQty(k, v){
+    v = Math.max(0, Math.min(9999, v|0));
+    if(v===0) delete state.cart[k]; else state.cart[k]=v;
+    saveCart(); render(); renderCart();
+  }
+
+  document.getElementById("prevPage").onclick = ()=>{ if(state.page>1){state.page--; render();} };
+  document.getElementById("nextPage").onclick = ()=>{ state.page++; render(); };
+
+  // ---- cart render ----
+  const cartBody = document.getElementById("cartBody");
+  const cartCount = document.getElementById("cartCount");
+  const cartTotalEl = document.getElementById("cartTotal");
+  const genBtn = document.getElementById("genBtn");
+  const clearBtn = document.getElementById("clearBtn");
+
+  function cartItems(){
+    return P.filter(p=> state.cart[keyOf(p)]>0).map(p=>({p, qty:state.cart[keyOf(p)]}));
+  }
+  function renderCart(){
+    const items = cartItems();
+    const totalQty = items.reduce((s,i)=>s+i.qty,0);
+    cartCount.textContent = totalQty;
+    cartTotalEl.textContent = totalQty;
+    document.getElementById("barCount").textContent = totalQty;
+    genBtn.disabled = items.length===0;
+    clearBtn.disabled = items.length===0;
+
+    if(items.length===0){
+      cartBody.innerHTML = '<div class="chint">在左侧点击商品「+」加入补货清单<br/>清单按供货商自动分组</div>';
+      return;
+    }
+    // group by supplier
+    const groups = {};
+    items.forEach(i=>{ (groups[i.p.supplier] = groups[i.p.supplier]||[]).push(i); });
+    let html = "";
+    Object.keys(groups).forEach(sup=>{
+      const arr = groups[sup];
+      const gq = arr.reduce((s,i)=>s+i.qty,0);
+      html += '<div class="cgroup"><span class="gt">'+esc(sup)+' · '+gq+'件</span>';
+      arr.forEach(i=>{
+        html += '<div class="citem">'+
+          '<span class="ci-name" title="'+esc(i.p.name)+'">'+esc(i.p.name)+'</span>'+
+          '<span class="ci-q">×'+i.qty+' '+orderUnit(i.p)+'</span>'+
+          '<button class="ci-x" data-k="'+esc(keyOf(i.p))+'" title="移除">✕</button></div>';
+      });
+      html += '</div>';
+    });
+    cartBody.innerHTML = html;
+    cartBody.querySelectorAll('.ci-x').forEach(b=>{
+      b.onclick = ()=> setQty(b.getAttribute("data-k"), 0);
+    });
+  }
+
+  clearBtn.onclick = ()=>{
+    if(Object.keys(state.cart).length===0) return;
+    state.cart = {}; saveCart(); render(); renderCart(); toast("已清空补货清单");
+  };
+
+  // mobile bottom-sheet cart
+  const cartEl = document.getElementById("cart");
+  const cartBar = document.getElementById("cartBar");
+  const cartBackdrop = document.getElementById("cartBackdrop");
+  const barToggle = document.getElementById("barToggle");
+  function setCartOpen(open){
+    cartEl.classList.toggle("open", open);
+    cartBackdrop.classList.toggle("show", open);
+    barToggle.textContent = open ? "收起 ▾" : "展开 ▴";
+  }
+  cartBar.addEventListener("click", ()=> setCartOpen(!cartEl.classList.contains("open")));
+  cartBackdrop.addEventListener("click", ()=> setCartOpen(false));
+
+  // ---- generate order ----
+  const mask = document.getElementById("mask");
+  const modalBody = document.getElementById("modalBody");
+  let lastCSV = "";
+  let lastCanvas = null;
+
+  genBtn.onclick = ()=>{
+    const items = cartItems();
+    if(items.length===0) return;
+    setCartOpen(false);
+    const groups = {};
+    items.forEach(i=>{ (groups[i.p.supplier] = groups[i.p.supplier]||[]).push(i); });
+    let html = "";
+    let csv = "商品名称,进货单位,补货数量\n";
+    const totalQty = items.reduce((s,i)=>s+i.qty,0);
+    Object.keys(groups).forEach(sup=>{
+      const arr = groups[sup];
+      const gq = arr.reduce((s,i)=>s+i.qty,0);
+      csv += "\n供货商："+sup+"\n";
+      html += '<div class="ord-block"><div class="oh">📦 '+esc(sup)+' · '+gq+' 件</div>';
+      html += '<table><thead><tr><th>商品名称</th><th>进货单位</th><th>补货数量</th></tr></thead><tbody>';
+      arr.forEach(i=>{
+        const ou = orderUnit(i.p);
+        html += '<tr><td>'+esc(i.p.name)+'</td><td>'+ou+'</td><td>'+i.qty+'</td></tr>';
+        csv += '"'+csvEsc(i.p.name)+'","'+ou+'",'+i.qty+'\n';
+      });
+      html += '</tbody></table></div>';
+    });
+    html = '<p style="margin:0 0 12px;color:var(--muted);font-size:13px">共 <b style="color:var(--text)">'+totalQty+'</b> 件，已按 <b style="color:var(--accent-ink)">'+Object.keys(groups).length+'</b> 个供货商分组。</p>'+html;
+    modalBody.innerHTML = html + '<div id="canvasWrap" style="margin-top:14px"></div>';
+    lastCSV = csv;
+    lastCanvas = buildOrderCanvas();
+    document.getElementById("canvasWrap").appendChild(lastCanvas);
+    const shareBtn = document.getElementById("shareBtn");
+    if(navigator.canShare && navigator.canShare({files:[new File([new Uint8Array(1)],"x.png",{type:"image/png"})]})){
+      shareBtn.style.display = "";
+    } else {
+      shareBtn.style.display = "none";
+    }
+    mask.classList.add("show");
+  };
+  document.getElementById("closeBtn").onclick = ()=> mask.classList.remove("show");
+  mask.onclick = (e)=>{ if(e.target===mask) mask.classList.remove("show"); };
+  document.getElementById("copyBtn").onclick = ()=>{
+    const text = csvToText();
+    navigator.clipboard?.writeText(text).then(()=>toast("已复制到剪贴板"),()=>fallbackCopy(text));
+  };
+  document.getElementById("dlBtn").onclick = ()=>{
+    const blob = new Blob(["\ufeff"+lastCSV], {type:"text/csv;charset=utf-8"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "补货单_"+new Date().toISOString().slice(0,10)+".csv";
+    a.click(); URL.revokeObjectURL(a.href);
+    toast("已下载 CSV 补货单");
+  };
+  document.getElementById("imgBtn").onclick = ()=>{
+    if(!lastCanvas) return;
+    lastCanvas.toBlob(blob=>{
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "补货单_"+new Date().toISOString().slice(0,10)+".png";
+      a.click(); URL.revokeObjectURL(a.href);
+      toast("已保存补货单图片");
+    }, "image/png");
+  };
+  document.getElementById("shareBtn").onclick = ()=>{
+    if(!lastCanvas) return;
+    lastCanvas.toBlob(async blob=>{
+      const file = new File([blob], "补货单.png", {type:"image/png"});
+      try{ await navigator.share({files:[file], title:"店内补货单"}); }catch(e){}
+    }, "image/png");
+  };
+
+  function csvToText(){
+    const items = cartItems();
+    const groups = {};
+    items.forEach(i=>{ (groups[i.p.supplier] = groups[i.p.supplier]||[]).push(i); });
+    let out = "【补货单】\n";
+    const totalQty = items.reduce((s,i)=>s+i.qty,0);
+    Object.keys(groups).forEach(sup=>{
+      const arr = groups[sup];
+      const gq = arr.reduce((s,i)=>s+i.qty,0);
+      out += "\n▸ "+sup+"（"+gq+" 件）\n";
+      arr.forEach(i=> out += "  · "+i.p.name+"  ×"+i.qty+" "+orderUnit(i.p)+"\n");
+    });
+    out += "\n合计："+totalQty+" 件\n";
+    return out;
+  }
+  function csvEsc(s){ return String(s).replace(/"/g,'""'); }
+  function fallbackCopy(text){
+    const ta=document.createElement("textarea"); ta.value=text; document.body.appendChild(ta);
+    ta.select(); try{document.execCommand("copy"); toast("已复制到剪贴板");}catch(e){toast("复制失败，请手动复制");}
+    document.body.removeChild(ta);
+  }
+
+  // ---- build shareable order image ----
+  function roundRect(ctx,x,y,w,h,r){
+    if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(x,y,w,h,r); return; }
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+  function clipText(ctx,text,maxW){
+    if(ctx.measureText(text).width<=maxW) return text;
+    let t=text;
+    while(t.length>1 && ctx.measureText(t+"…").width>maxW){ t=t.slice(0,-1); }
+    return t+"…";
+  }
+  function buildOrderCanvas(){
+    const items=cartItems();
+    const groups={};
+    items.forEach(i=>{(groups[i.p.supplier]=groups[i.p.supplier]||[]).push(i);});
+    const W=720, pad=26;
+    const titleH=64, metaH=34, groupHeadH=44, lineH=34, footH=56, gap=12;
+    const totalQty=items.reduce((s,i)=>s+i.qty,0);
+    let h=pad+titleH+metaH+gap;
+    Object.keys(groups).forEach(sup=>{ h+=groupHeadH+6; groups[sup].forEach(()=>h+=lineH); h+=10; });
+    h+=footH+pad;
+
+    const scale=2;
+    const c=document.createElement("canvas");
+    c.width=W*scale; c.height=Math.ceil(h)*scale;
+    c.style.width="100%"; c.style.height="auto"; c.style.display="block"; c.style.borderRadius="12px";
+    const ctx=c.getContext("2d"); ctx.scale(scale,scale);
+    const R=16;
+
+    roundRect(ctx,0,0,W,h,R); ctx.fillStyle="#ffffff"; ctx.fill();
+    ctx.save(); roundRect(ctx,0,0,W,h,R); ctx.clip();
+
+    // title strip
+    const g=ctx.createLinearGradient(0,0,W,titleH);
+    g.addColorStop(0,"#1f9d74"); g.addColorStop(1,"#2bb98a");
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,titleH);
+    ctx.fillStyle="#ffffff"; ctx.textBaseline="middle";
+    ctx.font='bold 26px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif'; ctx.textAlign="left";
+    ctx.fillText("🛒 店内补货单", pad, titleH/2);
+    ctx.font='14px -apple-system,"PingFang SC",sans-serif'; ctx.textAlign="right"; ctx.fillStyle="rgba(255,255,255,.92)";
+    ctx.fillText(new Date().toLocaleDateString("zh-CN"), W-pad, titleH/2);
+
+    // meta
+    let y=pad+titleH+metaH/2;
+    ctx.fillStyle="#6b7280"; ctx.font='14px -apple-system,"PingFang SC",sans-serif'; ctx.textAlign="left"; ctx.textBaseline="middle";
+    ctx.fillText("共 "+totalQty+" 件 · "+Object.keys(groups).length+" 个供货商", pad, y);
+
+    y=pad+titleH+metaH+gap;
+    Object.keys(groups).forEach(sup=>{
+      const arr=groups[sup];
+      const gq=arr.reduce((s,i)=>s+i.qty,0);
+      roundRect(ctx,pad,y,W-pad*2,groupHeadH,10); ctx.fillStyle="#eaf3fc"; ctx.fill();
+      ctx.fillStyle="#1f9d74"; ctx.font='bold 16px -apple-system,"PingFang SC",sans-serif'; ctx.textAlign="left"; ctx.textBaseline="middle";
+      ctx.fillText(sup, pad+12, y+groupHeadH/2);
+      ctx.fillStyle="#5a606b"; ctx.font='13px -apple-system,"PingFang SC",sans-serif'; ctx.textAlign="right";
+      ctx.fillText(gq+" 件", W-pad-12, y+groupHeadH/2);
+      y+=groupHeadH+6;
+      arr.forEach(i=>{
+        const ou = orderUnit(i.p);
+        ctx.fillStyle="#2b2f36"; ctx.font='14px -apple-system,"PingFang SC",sans-serif'; ctx.textAlign="left"; ctx.textBaseline="middle";
+        ctx.fillText(clipText(ctx,i.p.name, W-pad*2-160), pad+12, y+lineH/2);
+        ctx.fillStyle="#5a606b"; ctx.textAlign="right";
+        ctx.fillText("×"+i.qty+" "+ou, W-pad-12, y+lineH/2);
+        y+=lineH;
+      });
+      y+=10;
+    });
+
+    // footer
+    ctx.fillStyle="#f3f8fe"; ctx.fillRect(0,h-footH,W,footH);
+    ctx.fillStyle="#2b2f36"; ctx.font='15px -apple-system,"PingFang SC",sans-serif'; ctx.textAlign="left"; ctx.textBaseline="middle";
+    ctx.fillText("合计", pad, h-footH/2);
+    ctx.fillStyle="#1f9d74"; ctx.font='bold 24px -apple-system,"PingFang SC",sans-serif'; ctx.textAlign="right";
+    ctx.fillText(totalQty+" 件", W-pad, h-footH/2);
+
+    ctx.restore();
+    ctx.lineWidth=1; ctx.strokeStyle="#e3eaf3"; roundRect(ctx,0.5,0.5,W-1,h-1,R); ctx.stroke();
+    return c;
+  }
+
+  // ---- barcode scanner ----
+  const scanBtn = document.getElementById("scanBtn");
+  const scanMask = document.getElementById("scanMask");
+  const scanVideo = document.getElementById("scanVideo");
+  const scanTip = document.getElementById("scanTip");
+  const scanClose = document.getElementById("scanClose");
+  const scanManual = document.getElementById("scanManual");
+  const scanManualBtn = document.getElementById("scanManualBtn");
+  let scanStream=null, scanRAF=null, scanDetector=null;
+
+  function openScanner(){ scanMask.classList.add("show"); scanTip.textContent="正在启动摄像头…"; startCamera(); }
+  function closeScanner(){ scanMask.classList.remove("show"); stopCamera(); }
+  async function startCamera(){
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      scanTip.textContent="当前环境不支持摄像头，请手动输入条码";
+      return;
+    }
+    try{
+      scanStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}, audio:false});
+      scanVideo.srcObject = scanStream;
+      await scanVideo.play();
+      scanTip.textContent="将商品条码对准取景框";
+      startDetect();
+    }catch(e){
+      scanTip.textContent="无法访问摄像头，请手动输入条码";
+    }
+  }
+  function stopCamera(){
+    if(scanRAF) cancelAnimationFrame(scanRAF);
+    scanRAF=null;
+    if(scanStream){ scanStream.getTracks().forEach(t=>t.stop()); scanStream=null; }
+    scanVideo.srcObject=null;
+  }
+  function startDetect(){
+    if(!("BarcodeDetector" in window)){ scanTip.textContent="浏览器不支持自动识别，请手动输入条码"; return; }
+    if(!scanDetector){
+      try{ scanDetector = new BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e","code_128","code_39"]}); }
+      catch(e){ try{ scanDetector = new BarcodeDetector(); }catch(e2){ scanDetector=null; } }
+    }
+    if(!scanDetector){ scanTip.textContent="浏览器不支持自动识别，请手动输入条码"; return; }
+    const loop = async ()=>{
+      if(!scanStream) return;
+      try{
+        const codes = await scanDetector.detect(scanVideo);
+        if(codes.length){ applyScanned(codes[0].rawValue); return; }
+      }catch(e){}
+      scanRAF = requestAnimationFrame(loop);
+    };
+    scanRAF = requestAnimationFrame(loop);
+  }
+  function applyScanned(v){
+    closeScanner();
+    const q = document.getElementById("q");
+    q.value = v; state.q = v.toLowerCase(); state.page = 1; render();
+    toast("已录入条码：" + v);
+  }
+  scanBtn.addEventListener("click", openScanner);
+
+  const qrBtn = document.getElementById("qrBtn");
+  const qrModal = document.getElementById("qrModal");
+  const qrUrl = document.getElementById("qrUrl");
+  const DEPLOY_URL = "https://0dbf5c6e8aa246e89e3e977c5aa94dd3.bj7.agentos-app.net/";
+  qrBtn.onclick = ()=>{ qrUrl.textContent = DEPLOY_URL; qrModal.classList.add("show"); };
+  qrModal.addEventListener("click", (e)=>{ if(e.target===qrModal) qrModal.classList.remove("show"); });
+  document.getElementById("qrClose").onclick = ()=> qrModal.classList.remove("show");
+  scanClose.addEventListener("click", closeScanner);
+  scanMask.addEventListener("click", e=>{ if(e.target===scanMask) closeScanner(); });
+  scanManualBtn.addEventListener("click", ()=>{ const v=scanManual.value.trim(); if(v) applyScanned(v); });
+  scanManual.addEventListener("keydown", e=>{ if(e.key==="Enter"){ const v=scanManual.value.trim(); if(v) applyScanned(v); } });
+
+  // ---- toast ----
+  let toastTimer;
+  function toast(msg){
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> t.classList.remove("show"), 1800);
+  }
+
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  // ---- init ----
+  render(); renderCart();
+})();
+</script>
+</body>
+</html>
