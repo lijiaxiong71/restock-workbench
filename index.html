@@ -278,7 +278,6 @@
     .pbarcode{font-size:9.5px}
     tbody td:last-child{width:100%; justify-content:flex-end; background:var(--accent-soft); border-radius:6px; margin-top:1px; padding:2px 6px}
     tbody td:last-child::before{color:var(--accent-ink); font-weight:600; font-size:9.5px}
-    tbody td[data-label="成本"]{display:none}
     .stepper button{width:30px; height:30px; font-size:16px; border-radius:7px}
     .stepper input{height:30px; width:42px; font-size:13px}
     .pager button{padding:7px 16px; font-size:13px}
@@ -346,7 +345,7 @@
                 <th>供货商</th>
                 <th>分组</th>
                 <th>售价</th>
-                <th>会员价</th>
+                <th>成本</th>
                 <th>库存</th>
                 <th>单位</th>
                 <th>成本</th>
@@ -3222,10 +3221,9 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
           '<td data-label="供货商"><span class="sup-tag">'+esc(p.supplier)+'</span></td>'+
           '<td data-label="分组">'+(p.category?'<span class="tag">'+esc(p.category)+'</span>':'—')+'</td>'+
           '<td data-label="售价" class="price">¥'+fmt(p.price)+'</td>'+
-          '<td data-label="会员价" class="mem">'+(p.memberPrice!=null?'¥'+fmt(p.memberPrice):'—')+'</td>'+
+          '<td data-label="成本" class="num-cell">¥'+fmt(p.cost)+'</td>'+
           '<td data-label="库存">'+stockBadge(p)+'</td>'+
           '<td data-label="单位" class="num-cell">'+(p.unit||'—')+'</td>'+
-          '<td data-label="成本" class="num-cell">¥'+fmt(p.cost)+'</td>'+
           '<td data-label="补货数量" style="text-align:right">'+stepperHTML(k,qty,p)+'</td>';
         tbody.appendChild(tr);
       });
