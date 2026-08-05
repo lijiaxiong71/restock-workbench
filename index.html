@@ -158,6 +158,16 @@
   .stock-input:focus{outline:none; border-color:var(--accent)}
   .btn.sm{padding:5px 12px; font-size:13px}
   .num-cell{font-variant-numeric:tabular-nums; color:#5a606b}
+  /* 喇叭音效按钮（圆形图标） */
+  .icon-btn{width:34px; height:34px; padding:0; border:1px solid var(--line); border-radius:50%;
+    background:#fff; color:var(--muted); display:inline-flex; align-items:center; justify-content:center;
+    cursor:pointer; transition:background .15s, border-color .15s, color .15s, transform .08s;
+    box-shadow:0 1px 2px rgba(20,30,50,.06)}
+  .icon-btn:hover{background:var(--accent-soft); border-color:var(--accent); color:var(--accent-ink)}
+  .icon-btn:active{transform:scale(.92)}
+  .icon-btn.on{color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft)}
+  .icon-btn svg{display:block; width:18px; height:18px}
+  @media(max-width:560px){ .icon-btn{width:32px; height:32px} }
 
   /* stepper */
   .stepper{display:inline-flex; align-items:center; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:#fff}
@@ -337,7 +347,7 @@
             <span class="chip danger" data-q="zero">仅看缺货</span>
           </div>
           <div class="resultline">匹配 <b id="resCount">0</b> 个商品</div>
-          <button class="btn ghost sm" id="muteBtn" title="按键音效开关">🔊</button>
+          <button class="icon-btn" id="muteBtn" title="按键音效开关" aria-label="按键音效开关"></button>
           <button class="btn ghost sm" id="expStock" title="导出现有库存(CSV)">导出库存</button>
         </div>
       </div>
@@ -3341,7 +3351,9 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
   });
 
   const muteBtn = document.getElementById("muteBtn");
-  function syncMuteIcon(){ muteBtn.textContent = soundOn ? "🔊" : "🔇"; }
+  const SPK_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" stroke="none"/><path d="M16.5 8.5a4.5 4.5 0 0 1 0 7"/><path d="M19 6a8 8 0 0 1 0 12"/></svg>';
+  const SPK_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" stroke="none"/><line x1="16" y1="9" x2="21" y2="15"/><line x1="21" y1="9" x2="16" y2="15"/></svg>';
+  function syncMuteIcon(){ muteBtn.innerHTML = soundOn ? SPK_ON : SPK_OFF; muteBtn.classList.toggle("on", soundOn); }
   syncMuteIcon();
   muteBtn.addEventListener("click", ()=>{
     soundOn = !soundOn;
