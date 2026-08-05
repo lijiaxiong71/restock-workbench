@@ -3514,7 +3514,10 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
       fps: 15,
       qrbox: function(vw, vh){ return { width: Math.floor(vw*0.85), height: Math.floor(vh*0.45) }; },
       aspectRatio: 4/3,
-      formatsToSupport: SCAN_FORMATS || undefined
+      formatsToSupport: SCAN_FORMATS || undefined,
+      // iOS 16+ 等环境优先用系统原生 BarcodeDetector，对 1D 商品码识别率远高于 ZXing 软解
+      useBarCodeDetectorIfSupported: true,
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true }
     };
     html5Qr.start({facingMode:"environment"}, config, onScanSuccess, onScanError)
       .then(()=>{ scanning = true; scanTip.textContent = "将商品条码横向放入框内，保持平稳"; })
@@ -3538,12 +3541,38 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
       html5Qr.stop().then(()=>{ try{ html5Qr.clear(); }catch(e){} }).catch(()=>{});
     }
   }
+  // 归一化条码：去空格、去非数字（兼容前导0/长度差异），用于模糊匹配
+  function normCode(v){
+    return String(v||"").replace(/[^0-9]/g, "");
+  }
+  function findProductByCode(v){
+    if(!v) return null;
+    const raw = String(v).trim();
+    const num = normCode(raw);
+    // 1) 精确匹配（含原始串、去非数字、去前导0）
+    let hit = P.find(p => {
+      const b = String(p.barcode||"").trim();
+      return b === raw || normCode(b) === num || normCode(b).replace(/^0+/,"") === num.replace(/^0+/,"");
+    });
+    if(hit) return hit;
+    // 2) 末尾/开头补0对齐（EAN-13 与 UPC-A 互转：13位补前导0成14位）
+    const padded = num.length === 13 ? "0"+num : (num.length === 14 ? num.slice(1) : null);
+    if(padded){
+      hit = P.find(p => normCode(p.barcode) === padded || normCode(p.barcode) === (num.length===14?num.slice(1):num));
+      if(hit) return hit;
+    }
+    return null;
+  }
   function applyScanned(v){
     closeScanner();
     const q = document.getElementById("q");
     q.value = v; state.q = v.toLowerCase(); state.page = 1; render();
-    const hit = P.find(p => (p.barcode||"") === v);
-    toast(hit ? ("已录入：" + hit.name) : ("已录入条码：" + v));
+    const hit = findProductByCode(v);
+    if(hit){
+      toast("已关联商品：" + hit.name + "（条码 " + hit.barcode + "）");
+    }else{
+      toast("已扫到条码 " + v + "，但目录中未找到该商品，可手动核对");
+    }
   }
   scanBtn.addEventListener("click", openScanner);
 
