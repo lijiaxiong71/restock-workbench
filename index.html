@@ -6,13 +6,14 @@
 <title>店内补货工作台</title>
 <style>
   :root{
-    --bg:#eaf3e2; --card:#fffdf5; --line:#e4dcc4; --line-soft:#f0ead8;
-    --text:#3d3826; --muted:#8a866a; --muted-2:#a9a486;
-    --accent:#6f9c3f; --accent-soft:#eef4dc; --accent-ink:#4a6b2a;
-    --danger:#c75a44; --danger-soft:#fbeae4; --warn:#df9a3a; --warn-soft:#fbf0db;
-    --ok:#5b9e46; --ok-soft:#ebf4e6;
-    --sky:#bfe0f0; --hill:#a9d18a; --sun:#f6d98a;
-    --shadow:0 1px 2px rgba(90,70,30,.05), 0 8px 24px rgba(90,70,30,.08);
+    --bg:#dce8f0; --card:#fffaf3; --line:#ddd4c6; --line-soft:#efe9dd;
+    --text:#2c2820; --muted:#7a7568; --muted-2:#9e9988;
+    --accent:#5a8f3a; --accent-soft:#eef2e0; --accent-ink:#3d6b24;
+    --danger:#c45a3a; --danger-soft:#fbe9e2; --warn:#cf8a2a; --warn-soft:#fbf0db;
+    --ok:#4a8a3a; --ok-soft:#eaf3e2;
+    --sky-deep:#2e6090; --sky-mid:#5a92b8; --cloud:#fff8f0; --cloud-shadow:#e8dcc8;
+    --hill-far:#6a9ac4; --hill-near:#4a7a9e; --sun-warm:#f0c050;
+    --shadow:0 1px 2px rgba(60,40,20,.06), 0 8px 24px rgba(60,40,20,.10);
     --radius:14px;
   }
   *{box-sizing:border-box}
@@ -20,27 +21,27 @@
   body{
     font-family:"Yuanti SC","Hiragino Maru Gothic ProN","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
     font-size:15px; line-height:1.6; color:var(--text);
-    background:linear-gradient(180deg,#bfe0f0 0%, #d6ecdd 30%, #eef3df 62%, #fbf6e7 100%);
+    background:linear-gradient(180deg, #2e6090 0%, #4a8ab8 18%, #7aaccc 38%, #b8d4e8 58%, #e8eed8 78%, #f5edd8 100%);
     background-attachment:fixed;
     -webkit-font-smoothing:antialiased;
   }
-  /* 宫崎骏风背景装饰：云朵 + 远山 + 暖阳 */
-  .scenery{position:fixed; top:0; left:0; right:0; height:210px; z-index:0; pointer-events:none; overflow:hidden}
+  /* 宫崎骏风背景装饰：红猪(Porco Rosso)——深蓝天空 + 蓬松云层 + 远山 */
+  .scenery{position:fixed; top:0; left:0; right:0; height:240px; z-index:0; pointer-events:none; overflow:hidden}
   .scenery svg{width:100%; height:100%; display:block}
-  @media(max-width:560px){ .scenery{height:150px} }
+  @media(max-width:560px){ .scenery{height:170px} }
   /* top bar */
   .topbar{
-    position:sticky; top:0; z-index:30; background:rgba(255,253,245,.86);
-    backdrop-filter:saturate(160%) blur(10px);
+    position:sticky; top:0; z-index:30; background:rgba(255,250,243,.82);
+    backdrop-filter:saturate(160%) blur(12px);
     border-bottom:1px solid var(--line); padding:14px 22px;
     display:flex; align-items:center; gap:18px; flex-wrap:wrap;
   }
   .brand{display:flex; align-items:center; gap:11px; min-width:0}
   .logo{
     width:38px; height:38px; border-radius:11px; flex:none;
-    background:linear-gradient(135deg,var(--accent),#93c04f);
+    background:linear-gradient(135deg,#5a8f3a,#7db84a);
     display:flex; align-items:center; justify-content:center; color:#fff; font-size:20px;
-    box-shadow:0 4px 12px rgba(111,156,63,.32);
+    box-shadow:0 4px 12px rgba(90,143,58,.30);
   }
   .brand h1{font-size:18px; margin:0; font-weight:700; letter-spacing:.3px}
   .brand p{margin:0; font-size:12.5px; color:var(--muted)}
@@ -50,7 +51,7 @@
     border-radius:11px; padding:7px 14px; min-width:78px; text-align:center; box-shadow:var(--shadow);
     transition:transform .15s, box-shadow .15s;
   }
-  .stat:hover{transform:translateY(-2px); box-shadow:0 4px 14px rgba(20,30,50,.1)}
+  .stat:hover{transform:translateY(-2px); box-shadow:0 4px 14px rgba(60,40,20,.12)}
   .stat b{display:block; font-size:19px; line-height:1.2; font-variant-numeric:tabular-nums}
   .stat span{font-size:11.5px; color:var(--muted)}
   .stat:first-child{border-left-color:var(--accent)}
@@ -63,15 +64,15 @@
 
   /* filter card */
   .panel{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); transition:box-shadow .2s, transform .2s}
-  .panel:hover{box-shadow:0 2px 5px rgba(20,30,50,.05), 0 12px 30px rgba(20,30,50,.09)}
+  .panel:hover{box-shadow:0 2px 5px rgba(60,40,20,.05), 0 12px 30px rgba(60,40,20,.10)}
   .filters{padding:16px 18px; display:flex; flex-direction:column; gap:13px}
   .search{position:relative}
   .search input{
     width:100%; height:44px; padding:0 90px 0 42px; font-size:15px;
-    border:1px solid var(--line); border-radius:12px; background:#fffef8; color:var(--text);
+    border:1px solid var(--line); border-radius:12px; background:#fffaf3; color:var(--text);
     outline:none; transition:border-color .15s, box-shadow .15s;
   }
-  .search input:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); background:#fff}
+  .search input:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); background:#fffaf3}
   .search svg{position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--muted-2)}
   .scan-btn{
     position:absolute; right:7px; top:50%; transform:translateY(-50%);
@@ -79,23 +80,23 @@
     background:var(--accent-soft); color:var(--accent-ink); font-size:17px;
     display:flex; align-items:center; justify-content:center; transition:background .12s;
   }
-  .scan-btn:hover{background:#e6efd2}
+  .scan-btn:hover{background:#dceccb}
   .qr-btn{
     position:absolute; right:48px; top:50%; transform:translateY(-50%);
     width:34px; height:34px; border:none; border-radius:9px; cursor:pointer;
-    background:#e6f1f6; color:#4f8fb3; font-size:17px;
+    background:#d8e8f2; color:#3a7aa0; font-size:17px;
     display:flex; align-items:center; justify-content:center; transition:background .12s;
   }
-  .qr-btn:hover{background:#d8e8f0}
+  .qr-btn:hover{background:#c4dce8}
   .qr-modal{position:fixed; inset:0; background:rgba(20,30,45,.55); display:none; align-items:center; justify-content:center; z-index:80; padding:20px}
   .qr-modal.show{display:flex}
   .qr-card{background:#fff; border-radius:18px; padding:22px; width:min(340px,92%); text-align:center; box-shadow:0 20px 50px rgba(0,0,0,.3)}
   .qr-card h3{margin:0 0 4px; font-size:17px; color:var(--text)}
   .qr-card p{margin:0 0 14px; font-size:13px; color:var(--muted)}
   .qr-card img{width:240px; height:240px; border-radius:12px; margin:0 auto; display:block; border:1px solid var(--line)}
-  .qr-card .qr-url{margin-top:12px; font-size:12px; color:var(--muted-2); word-break:break-all; background:#f6f3e9; padding:8px 10px; border-radius:8px}
+  .qr-card .qr-url{margin-top:12px; font-size:12px; color:var(--muted-2); word-break:break-all; background:#f5ede3; padding:8px 10px; border-radius:8px}
   .qr-card .btn{margin-top:14px; width:100%}
-  .sr-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:26px; letter-spacing:2px; font-weight:700; color:var(--text); background:#f6f3e9; border:1px dashed var(--line); border-radius:12px; padding:14px 10px; margin:6px 0 10px; word-break:break-all}
+  .sr-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:26px; letter-spacing:2px; font-weight:700; color:var(--text); background:#f5ede3; border:1px dashed var(--line); border-radius:12px; padding:14px 10px; margin:6px 0 10px; word-break:break-all}
   .sr-cands{margin:6px 0 4px; text-align:left}
   .sr-cand-h{font-size:13px; color:var(--muted); margin:8px 0 6px}
   .sr-cand{display:flex; flex-direction:column; gap:2px; padding:8px 10px; border:1px solid var(--line); border-radius:10px; margin-bottom:6px; background:#fff}
@@ -125,7 +126,7 @@
   .chips{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
   .chips .lbl{font-size:12.5px; color:var(--muted); margin-right:2px}
   .chip{
-    border:1px solid var(--line); background:#fff; color:#5a606b; border-radius:999px;
+    border:1px solid var(--line); background:#fff; color:#5a5040; border-radius:999px;
     padding:6px 13px; font-size:13.5px; cursor:pointer; user-select:none; transition:all .12s;
   }
   .chip:hover{border-color:#cfd5de}
@@ -149,7 +150,7 @@
   tbody tr:hover{background:#f3f8fe}
   .pname{font-weight:600; color:var(--text)}
   .pbarcode{font-size:12px; color:var(--muted-2); font-variant-numeric:tabular-nums; margin-top:1px}
-  .tag{display:inline-block; padding:2px 9px; border-radius:7px; font-size:12px; background:#f0f2f6; color:#5a606b}
+  .tag{display:inline-block; padding:2px 9px; border-radius:7px; font-size:12px; background:#eef0e4; color:#5a5040}
   .sup-tag{font-size:12px; color:var(--accent-ink); background:var(--accent-soft); padding:2px 9px; border-radius:7px; font-weight:600}
   .price{font-variant-numeric:tabular-nums; font-weight:600}
   .mem{color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums}
@@ -162,7 +163,7 @@
   .stock-input{width:52px; height:28px; padding:2px 4px; border:1px solid var(--line); border-radius:6px; font-size:12px; text-align:center; font-variant-numeric:tabular-nums; background:#fff; color:var(--text)}
   .stock-input:focus{outline:none; border-color:var(--accent)}
   .btn.sm{padding:5px 12px; font-size:13px}
-  .num-cell{font-variant-numeric:tabular-nums; color:#5a606b}
+  .num-cell{font-variant-numeric:tabular-nums; color:#5a5040}
   /* 喇叭音效按钮（圆形图标） */
   .icon-btn{width:34px; height:34px; padding:0; border:1px solid var(--line); border-radius:50%;
     background:#fff; color:var(--muted); display:inline-flex; align-items:center; justify-content:center;
@@ -177,11 +178,11 @@
   /* stepper */
   .stepper{display:inline-flex; align-items:center; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:#fff}
   .stepper button{
-    width:30px; height:32px; border:none; background:#fffef8; color:#6b6650; font-size:17px;
+    width:30px; height:32px; border:none; background:#fffaf3; color:#6b6650; font-size:17px;
     cursor:pointer; line-height:1; transition:background .12s;
   }
   .stepper button:hover{background:var(--accent-soft); color:var(--accent-ink)}
-  .stepper button:disabled{color:#cfd5de; cursor:not-allowed; background:#fffef8}
+  .stepper button:disabled{color:#cfd5de; cursor:not-allowed; background:#fffaf3}
   .stepper input{
     width:46px; height:32px; border:none; border-left:1px solid var(--line); border-right:1px solid var(--line);
     text-align:center; font-size:14px; color:var(--text); background:#fff; outline:none; font-variant-numeric:tabular-nums;
@@ -193,7 +194,7 @@
   /* pagination */
   .pager{display:flex; align-items:center; justify-content:center; gap:10px; padding:13px; border-top:1px solid var(--line)}
   .pager button{
-    border:1px solid var(--line); background:#fff; color:#5a606b; border-radius:9px;
+    border:1px solid var(--line); background:#fff; color:#5a5040; border-radius:9px;
     padding:6px 14px; font-size:13.5px; cursor:pointer; transition:all .12s;
   }
   .pager button:hover:not(:disabled){border-color:var(--accent); color:var(--accent-ink)}
@@ -226,7 +227,7 @@
   .btn.primary{background:linear-gradient(135deg,var(--accent),#188a63); color:#fff; box-shadow:0 6px 16px rgba(31,157,116,.32)}
   .btn.primary:hover{background:linear-gradient(135deg,#1b8c68,#157a57); box-shadow:0 8px 22px rgba(31,157,116,.42); transform:translateY(-1px)}
   .btn.primary:active{transform:translateY(1px)}
-  .btn.ghost{background:#fff; color:#5a606b; border:1px solid var(--line); margin-top:8px}
+  .btn.ghost{background:#fff; color:#5a5040; border:1px solid var(--line); margin-top:8px}
   .btn.ghost:hover{border-color:#cfd5de}
   .btn:disabled{opacity:.5; cursor:not-allowed; box-shadow:none}
   .cart .chint{font-size:12px; color:var(--muted-2); text-align:center; padding:24px 14px}
@@ -318,16 +319,74 @@
 </head>
 <body>
   <div class="scenery" aria-hidden="true">
-    <svg viewBox="0 0 1440 210" preserveAspectRatio="xMidYMin slice" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="1300" cy="58" r="36" fill="#f6d98a" opacity=".9"/>
-      <circle cx="1300" cy="58" r="52" fill="#f6d98a" opacity=".25"/>
-      <g fill="#ffffff" opacity=".8">
-        <ellipse cx="210" cy="52" rx="64" ry="22"/><ellipse cx="262" cy="42" rx="44" ry="20"/><ellipse cx="164" cy="44" rx="40" ry="18"/>
-        <ellipse cx="650" cy="40" rx="58" ry="20"/><ellipse cx="700" cy="32" rx="42" ry="18"/>
-        <ellipse cx="1000" cy="58" rx="62" ry="22"/><ellipse cx="1052" cy="48" rx="44" ry="18"/>
+    <svg viewBox="0 0 1440 240" preserveAspectRatio="xMidYMin slice" xmlns="http://www.w3.org/2000/svg">
+      <!-- 深蓝天空底 -->
+      <rect width="1440" height="240" fill="#2e6090"/>
+      <!-- 天空渐变过渡 -->
+      <defs>
+        <linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#2e6090"/>
+          <stop offset="45%" stop-color="#4a8ab8"/>
+          <stop offset="100%" stop-color="#8ab8d8"/>
+        </linearGradient>
+        <linearGradient id="cloudGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity=".95"/>
+          <stop offset="100%" stop-color="#f0e6d4" stop-opacity=".88"/>
+        </linearGradient>
+        <filter id="cloudBlur"><feGaussianBlur stdDeviation="3"/></filter>
+      </defs>
+      <rect width="1440" height="240" fill="url(#skyG)"/>
+      <!-- 远山层（深蓝灰剪影） -->
+      <path d="M0 220 L0 175 Q120 140 260 165 Q400 130 540 158 Q700 125 880 155 Q1040 128 1200 160 Q1340 138 1440 162 L1440 220 Z" fill="#3a6a94" opacity=".55"/>
+      <path d="M0 225 L0 190 Q180 160 360 182 Q540 152 720 178 Q920 150 1100 180 Q1280 158 1440 184 L1440 225 Z" fill="#4a7a9e" opacity=".45"/>
+      <!-- 暖阳（右上方，柔和光晕） -->
+      <circle cx="1260" cy="52" r="40" fill="#f0c050" opacity=".85"/>
+      <circle cx="1260" cy="52" r="58" fill="#f0c050" opacity=".18"/>
+      <circle cx="1260" cy="52" r="78" fill="#f0c050" opacity=".07"/>
+      <!-- ===== 蓬松云层（多层叠加，模拟吉卜力手绘水彩感）===== -->
+      <!-- 云团 A（左上大云） -->
+      <g opacity=".92">
+        <ellipse cx="180" cy="62" rx="90" ry="34" fill="#fffaf2"/>
+        <ellipse cx="140" cy="54" rx="56" ry="26" fill="#fffef8"/>
+        <ellipse cx="230" cy="52" rx="64" ry="28" fill="#fff8ee"/>
+        <ellipse cx="185" cy="44" rx="46" ry="20" fill="#ffffff"/>
+        <!-- 云阴影底部 -->
+        <ellipse cx="180" cy="76" rx="82" ry="14" fill="#e8dcc8" opacity=".35" filter="url(#cloudBlur)"/>
       </g>
-      <path d="M0 210 L0 150 Q220 108 440 146 T880 140 T1440 150 L1440 210 Z" fill="#bfe0a8" opacity=".55"/>
-      <path d="M0 210 L0 172 Q260 142 520 168 T1040 162 T1440 170 L1440 210 Z" fill="#a9d18a" opacity=".65"/>
+      <!-- 云团 B（中左） -->
+      <g opacity=".88">
+        <ellipse cx="480" cy="48" rx="72" ry="28" fill="#fffaf2"/>
+        <ellipse cx="440" cy="42" rx="48" ry="22" fill="#fffef8"/>
+        <ellipse cx="524" cy="40" rx="52" ry="22" fill="#fff8ee"/>
+        <ellipse cx="480" cy="34" rx="36" ry="16" fill="#ffffff"/>
+        <ellipse cx="480" cy="60" rx="66" ry="12" fill="#e8dcc8" opacity=".30" filter="url(#cloudBlur)"/>
+      </g>
+      <!-- 云团 C（中间偏上） -->
+      <g opacity=".85">
+        <ellipse cx="780" cy="58" rx="84" ry="32" fill="#fffaf2"/>
+        <ellipse cx="736" cy="48" rx="54" ry="24" fill="#fffef8"/>
+        <ellipse cx="832" cy="46" rx="58" ry="25" fill="#fff8ee"/>
+        <ellipse cx="780" cy="38" rx="42" ry="18" fill="#ffffff"/>
+        <ellipse cx="780" cy="74" rx="76" ry="13" fill="#e8dcc8" opacity=".33" filter="url(#cloudBlur)"/>
+      </g>
+      <!-- 云团 D（右侧） -->
+      <g opacity=".86">
+        <ellipse cx="1060" cy="66" rx="78" ry="30" fill="#fffaf2"/>
+        <ellipse cx="1020" cy="56" rx="50" ry="23" fill="#fffef8"/>
+        <ellipse cx="1110" cy="54" rx="56" ry="24" fill="#fff8ee"/>
+        <ellipse cx="1060" cy="46" rx="38" ry="17" fill="#ffffff"/>
+        <ellipse cx="1060" cy="80" rx="70" ry="12" fill="#e8dcc8" opacity=".31" filter="url(#cloudBlur)"/>
+      </g>
+      <!-- 小碎云点缀 -->
+      <g opacity=".65">
+        <ellipse cx="60" cy="96" rx="34" ry="13" fill="#ffffff"/>
+        <ellipse cx="340" cy="88" rx="38" ry="14" fill="#fffef8"/>
+        <ellipse cx="600" cy="92" rx="30" ry="11" fill="#ffffff"/>
+        <ellipse cx="920" cy="86" rx="36" ry="13" fill="#fffef8"/>
+        <ellipse cx="1180" cy="98" rx="32" ry="12" fill="#ffffff"/>
+      </g>
+      <!-- 底部薄雾过渡 -->
+      <rect y="210" width="1440" height="30" fill="url(#cloudGrad)" opacity=".45"/>
     </svg>
   </div>
   <div class="topbar">
