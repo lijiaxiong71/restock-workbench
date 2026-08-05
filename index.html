@@ -96,17 +96,16 @@
   .scan-view{position:relative; aspect-ratio:4/3; background:#000; overflow:hidden}
   #scanVideoWrapper{position:absolute; inset:0}
   #scanVideoWrapper video{width:100%!important; height:100%!important; object-fit:cover; display:block}
-  /* html5-qrcode 库渲染的 qrbox 元素叫 .qr-shaded-region（内容区=解码窗）。
-     隐藏它内部的白色边框 shader，改由我们的绿角标替代。 */
-  #scanVideoWrapper .qr-shaded-region{position:relative}
-  #scanVideoWrapper .qr-shaded-region > div{background-color:transparent!important; box-shadow:none!important}
-  /* 角标：由 JS 动态注入到 .qr-shaded-region 内部，视觉框=解码区 */
-  .scan-corner{position:absolute; width:26px; height:26px; border:3px solid var(--accent); box-sizing:border-box; pointer-events:none; z-index:6}
-  .scan-corner.tl{left:-3px; top:-3px; border-right:none; border-bottom:none; border-top-left-radius:9px}
-  .scan-corner.tr{right:-3px; top:-3px; border-left:none; border-bottom:none; border-top-right-radius:9px}
-  .scan-corner.bl{left:-3px; bottom:-3px; border-right:none; border-top:none; border-bottom-left-radius:9px}
-  .scan-corner.br{right:-3px; bottom:-3px; border-left:none; border-top:none; border-bottom-right-radius:9px}
-  .scan-guide{position:absolute; left:10%; right:10%; top:50%; border-top:2px dashed rgba(255,255,255,.85); pointer-events:none; z-index:6}
+  /* 纯 CSS 外部角标覆盖层——不触碰库内部 DOM，零干扰解码。
+     库 qrbox 配置为 width=vw×0.85, height=vh×0.45, 居中放置。
+     所以覆盖层坐标：left=(100-85)/2=7.5%, top=(100-45)/2=27.5%, 与库解码区像素级一致。 */
+  .scan-frame{position:absolute; left:7.5%; top:27.5%; width:85%; height:45%; pointer-events:none; z-index:10}
+  .scan-frame .corner{position:absolute; width:26px; height:26px; border:3px solid var(--accent); box-sizing:border-box}
+  .scan-frame .corner.tl{left:-3px; top:-3px; border-right:none; border-bottom:none; border-top-left-radius:9px}
+  .scan-frame .corner.tr{right:-3px; top:-3px; border-left:none; border-bottom:none; border-top-right-radius:9px}
+  .scan-frame .corner.bl{left:-3px; bottom:-3px; border-right:none; border-top:none; border-bottom-left-radius:9px}
+  .scan-frame .corner.br{right:-3px; bottom:-3px; border-left:none; border-top:none; border-bottom-right-radius:9px}
+  .scan-frame .guide{position:absolute; left:10%; right:10%; top:50%; border-top:2px dashed rgba(255,255,255,.85)}
   .scan-tip{color:#cdd6e4; font-size:13px; text-align:center; padding:10px 14px}
   .scan-manual{display:flex; gap:8px; padding:0 14px 14px}
   .scan-manual input{flex:1; height:42px; border:none; border-radius:10px; padding:0 12px; font-size:15px; outline:none}
@@ -407,6 +406,11 @@
       </div>
       <div class="scan-view">
         <div id="scanVideoWrapper"></div>
+        <div class="scan-frame">
+          <span class="corner tl"></span><span class="corner tr"></span>
+          <span class="corner bl"></span><span class="corner br"></span>
+          <span class="guide"></span>
+        </div>
       </div>
       <div class="scan-tip" id="scanTip">将商品条码横向放入框内，保持平稳</div>
       <div class="scan-manual">
@@ -3507,18 +3511,13 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
     scanTip.textContent = "正在启动摄像头，请允许访问…";
     if(!html5Qr){ try{ html5Qr = new Html5Qrcode("scanVideoWrapper", false); }catch(e){ scanTip.textContent="扫码组件初始化失败，请手动输入条码"; return; } }
     const config = {
-      fps: 10,
-      qrbox: function(vw, vh){ return { width: Math.floor(vw*0.8), height: Math.floor(vh*0.38) }; },
+      fps: 15,
+      qrbox: function(vw, vh){ return { width: Math.floor(vw*0.85), height: Math.floor(vh*0.45) }; },
       aspectRatio: 4/3,
       formatsToSupport: SCAN_FORMATS || undefined
     };
     html5Qr.start({facingMode:"environment"}, config, onScanSuccess, onScanError)
-      .then(()=>{
-        scanning = true;
-        scanTip.textContent = "将商品条码横向放入框内，保持平稳";
-        // 将角标+基准线注入库的 qrbox 内部，确保视觉框=解码区
-        injectScanOverlay();
-      })
+      .then(()=>{ scanning = true; scanTip.textContent = "将商品条码横向放入框内，保持平稳"; })
       .catch(err=>{
         scanning = false;
         const msg = String(err && err.message || err || "");
@@ -3533,31 +3532,6 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
     applyScanned(decodedText);
   }
   function onScanError(){ /* 连续识别中，忽略单帧错误 */ }
-
-  // 将角标+基准线动态注入 html5-qrcode 库的 .qr-shaded-region 内部（内容区=解码窗），保证视觉=解码区
-  function injectScanOverlay(){
-    const wrapper = document.getElementById("scanVideoWrapper");
-    if(!wrapper) return;
-    const shaded = wrapper.querySelector(".qr-shaded-region");
-    if(!shaded){
-      // 库 DOM 可能稍晚渲染，轮询重试
-      setTimeout(injectScanOverlay, 200);
-      return;
-    }
-    if(shaded.querySelector(".scan-corner")) return; // 已注入，避免重复
-    // 隐藏库自带的白色边框 shader（直接子 div），保留深色遮罩
-    Array.from(shaded.children).forEach(ch=>{ if(ch.style) ch.style.backgroundColor = "transparent"; });
-    // 注入四角角标
-    ["tl","tr","bl","br"].forEach(c=>{
-      const el = document.createElement("span");
-      el.className = "scan-corner "+c;
-      shaded.appendChild(el);
-    });
-    // 注入中心基准线
-    const guide = document.createElement("span");
-    guide.className = "scan-guide";
-    shaded.appendChild(guide);
-  }
   function stopCamera(){
     if(html5Qr && (scanning || html5Qr.isScanning)){
       scanning = false;
