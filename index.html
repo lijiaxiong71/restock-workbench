@@ -337,6 +337,7 @@
             <span class="chip danger" data-q="zero">仅看缺货</span>
           </div>
           <div class="resultline">匹配 <b id="resCount">0</b> 个商品</div>
+          <button class="btn ghost sm" id="muteBtn" title="按键音效开关">🔊</button>
           <button class="btn ghost sm" id="expStock" title="导出现有库存(CSV)">导出库存</button>
         </div>
       </div>
@@ -3092,6 +3093,35 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
   const STORE_KEY = "restock_cart_v1";
   const STOCK_KEY = "restock_stock_v1";
 
+  // ---- 按键音效（Web Audio 合成，零外部依赖）----
+  let audioCtx = null;
+  let soundOn = localStorage.getItem("restock_sound_on") !== "0"; // 默认开启
+  function beep(){
+    if(!soundOn) return;
+    try{
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if(audioCtx.state === "suspended") audioCtx.resume();
+      const t = audioCtx.currentTime;
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = "square";
+      o.frequency.setValueAtTime(720, t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.05, t + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(t); o.stop(t + 0.08);
+    }catch(e){}
+  }
+  // 全局事件委托：所有 button 点击都响（二维码/扫码/诊断弹窗内部按钮除外）
+  document.addEventListener("click", function(e){
+    const btn = e.target.closest("button");
+    if(!btn) return;
+    if(btn.id === "muteBtn") return;              // 由 muteBtn 自己控制发声
+    if(btn.closest("#qrModal") || btn.closest("#scanResultModal") || btn.closest("#scanMask")) return;
+    beep();
+  }, true);
+
   // ---- state ----
   const state = {
     q:"", sup:"全部", cat:"全部", quick:null,
@@ -3308,6 +3338,16 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
     a.download = "库存表_"+new Date().toISOString().slice(0,10)+".csv";
     document.body.appendChild(a); a.click(); a.remove();
     toast("已导出现有库存表(CSV)");
+  });
+
+  const muteBtn = document.getElementById("muteBtn");
+  function syncMuteIcon(){ muteBtn.textContent = soundOn ? "🔊" : "🔇"; }
+  syncMuteIcon();
+  muteBtn.addEventListener("click", ()=>{
+    soundOn = !soundOn;
+    localStorage.setItem("restock_sound_on", soundOn ? "1" : "0");
+    syncMuteIcon();
+    if(soundOn) beep(); // 打开时给个反馈音
   });
 
   document.getElementById("prevPage").onclick = ()=>{ if(state.page>1){state.page--; render();} };
