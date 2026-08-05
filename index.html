@@ -96,16 +96,17 @@
   .scan-view{position:relative; aspect-ratio:4/3; background:#000; overflow:hidden}
   #scanVideoWrapper{position:absolute; inset:0}
   #scanVideoWrapper video{width:100%!important; height:100%!important; object-fit:cover; display:block}
-  /* 隐藏 html5-qrcode 库自带的默认 qrbox 样式（我们用自己的角标替代） */
-  #scanVideoWrapper #__qr_shaded{border:none!important; box-shadow:none!important; background:transparent!important}
-  #scanVideoWrapper [id^="__qr_"]{border:none!important; box-shadow:none!important; background:transparent!important}
-  /* 角标：动态注入到库的 qrbox 内部 */
-  .scan-corner{position:absolute; width:24px; height:24px; border:3px solid var(--accent); box-sizing:border-box; pointer-events:none; z-index:5}
-  .scan-corner.tl{left:0; top:0; border-right:none; border-bottom:none; border-top-left-radius:8px}
-  .scan-corner.tr{right:0; top:0; border-left:none; border-bottom:none; border-top-right-radius:8px}
-  .scan-corner.bl{left:0; bottom:0; border-right:none; border-top:none; border-bottom-left-radius:8px}
-  .scan-corner.br{right:0; bottom:0; border-left:none; border-top:none; border-bottom-right-radius:8px}
-  .scan-guide{position:absolute; left:8%; right:8%; top:50%; border-top:2px dashed rgba(255,255,255,.85); pointer-events:none; z-index:5}
+  /* html5-qrcode 库渲染的 qrbox 元素叫 .qr-shaded-region（内容区=解码窗）。
+     隐藏它内部的白色边框 shader，改由我们的绿角标替代。 */
+  #scanVideoWrapper .qr-shaded-region{position:relative}
+  #scanVideoWrapper .qr-shaded-region > div{background-color:transparent!important; box-shadow:none!important}
+  /* 角标：由 JS 动态注入到 .qr-shaded-region 内部，视觉框=解码区 */
+  .scan-corner{position:absolute; width:26px; height:26px; border:3px solid var(--accent); box-sizing:border-box; pointer-events:none; z-index:6}
+  .scan-corner.tl{left:-3px; top:-3px; border-right:none; border-bottom:none; border-top-left-radius:9px}
+  .scan-corner.tr{right:-3px; top:-3px; border-left:none; border-bottom:none; border-top-right-radius:9px}
+  .scan-corner.bl{left:-3px; bottom:-3px; border-right:none; border-top:none; border-bottom-left-radius:9px}
+  .scan-corner.br{right:-3px; bottom:-3px; border-left:none; border-top:none; border-bottom-right-radius:9px}
+  .scan-guide{position:absolute; left:10%; right:10%; top:50%; border-top:2px dashed rgba(255,255,255,.85); pointer-events:none; z-index:6}
   .scan-tip{color:#cdd6e4; font-size:13px; text-align:center; padding:10px 14px}
   .scan-manual{display:flex; gap:8px; padding:0 14px 14px}
   .scan-manual input{flex:1; height:42px; border:none; border-radius:10px; padding:0 12px; font-size:15px; outline:none}
@@ -3533,40 +3534,29 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
   }
   function onScanError(){ /* 连续识别中，忽略单帧错误 */ }
 
-  // 将角标+基准线动态注入 html5-qrcode 库的 qrbox 内部，保证视觉=解码区
+  // 将角标+基准线动态注入 html5-qrcode 库的 .qr-shaded-region 内部（内容区=解码窗），保证视觉=解码区
   function injectScanOverlay(){
     const wrapper = document.getElementById("scanVideoWrapper");
     if(!wrapper) return;
-    // html5-qrcode 在 wrapper 内创建 #__qr_shaded，其子元素中有一个是 qrbox（透明窗口）
-    const shaded = wrapper.querySelector("#__qr_shaded") || wrapper.querySelector("[id*='shaded']");
-    if(!shaded) return;
-    // 找到库的 qrbox（通常是 shaded 的直接子 div，或带 __qr_ 前缀的元素）
-    let qrbox = shaded.querySelector("[id*='qr']") || shaded.children[0];
-    if(!qrbox){
-      // 兜底：取 shaded 的第一个有尺寸的子元素
-      for(const ch of shaded.children){
-        const s = getComputedStyle(ch);
-        if(s.width && s.height && parseInt(s.width)>50){
-          qrbox = ch; break;
-        }
-      }
+    const shaded = wrapper.querySelector(".qr-shaded-region");
+    if(!shaded){
+      // 库 DOM 可能稍晚渲染，轮询重试
+      setTimeout(injectScanOverlay, 200);
+      return;
     }
-    if(!qrbox) return;
-    // 确保 qrbox 有定位上下文
-    const pos = getComputedStyle(qrbox).position;
-    if(pos==="static") qrbox.style.position="relative";
-    // 避免重复注入
-    if(qrbox.querySelector(".scan-corner")) return;
+    if(shaded.querySelector(".scan-corner")) return; // 已注入，避免重复
+    // 隐藏库自带的白色边框 shader（直接子 div），保留深色遮罩
+    Array.from(shaded.children).forEach(ch=>{ if(ch.style) ch.style.backgroundColor = "transparent"; });
     // 注入四角角标
-    ["tl","tr","bl","br"].forEach(pos=>{
+    ["tl","tr","bl","br"].forEach(c=>{
       const el = document.createElement("span");
-      el.className = "scan-corner "+pos;
-      qrbox.appendChild(el);
+      el.className = "scan-corner "+c;
+      shaded.appendChild(el);
     });
     // 注入中心基准线
     const guide = document.createElement("span");
     guide.className = "scan-guide";
-    qrbox.appendChild(guide);
+    shaded.appendChild(guide);
   }
   function stopCamera(){
     if(html5Qr && (scanning || html5Qr.isScanning)){
