@@ -96,9 +96,16 @@
   .scan-view{position:relative; aspect-ratio:4/3; background:#000; overflow:hidden}
   #scanVideoWrapper{position:absolute; inset:0; display:flex; align-items:center; justify-content:center}
   #scanVideoWrapper video, #scanVideoWrapper canvas{width:100%!important; height:100%!important; object-fit:cover; display:block}
-  .scan-frame{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:72%; height:42%; border:2px solid rgba(255,255,255,.9); border-radius:12px; box-shadow:0 0 0 9999px rgba(0,0,0,.35); pointer-events:none}
-  .scan-line{position:absolute; left:14%; right:14%; top:29%; height:2px; background:var(--accent); box-shadow:0 0 8px var(--accent); animation:scanmove 1.8s ease-in-out infinite}
-  @keyframes scanmove{0%{top:29%}50%{top:67%}100%{top:29%}}
+  /* 取景框：与 qrbox 解码区严格同尺寸(宽80%×高38%)，四角角标+中心基准线引导对准 */
+  .scan-frame{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:80%; height:38%; pointer-events:none; z-index:3}
+  .scan-frame .corner{position:absolute; width:28px; height:28px; border:3px solid var(--accent); box-sizing:border-box}
+  .scan-frame .corner.tl{left:0; top:0; border-right:none; border-bottom:none; border-top-left-radius:10px}
+  .scan-frame .corner.tr{right:0; top:0; border-left:none; border-bottom:none; border-top-right-radius:10px}
+  .scan-frame .corner.bl{left:0; bottom:0; border-right:none; border-top:none; border-bottom-left-radius:10px}
+  .scan-frame .corner.br{right:0; bottom:0; border-left:none; border-top:none; border-bottom-right-radius:10px}
+  .scan-frame .guide{position:absolute; left:6%; right:6%; top:50%; border-top:2px dashed rgba(255,255,255,.85)}
+  .scan-line{position:absolute; left:10%; right:10%; top:50%; height:2px; background:var(--accent); box-shadow:0 0 8px var(--accent); animation:scanmove 1.8s ease-in-out infinite; transform:translateY(-1px); z-index:4}
+  @keyframes scanmove{0%{top:31%}50%{top:69%}100%{top:31%}}
   .scan-tip{color:#cdd6e4; font-size:13px; text-align:center; padding:10px 14px}
   .scan-manual{display:flex; gap:8px; padding:0 14px 14px}
   .scan-manual input{flex:1; height:42px; border:none; border-radius:10px; padding:0 12px; font-size:15px; outline:none}
@@ -399,10 +406,14 @@
       </div>
       <div class="scan-view">
         <div id="scanVideoWrapper"></div>
-        <div class="scan-frame"></div>
+        <div class="scan-frame">
+          <span class="corner tl"></span><span class="corner tr"></span>
+          <span class="corner bl"></span><span class="corner br"></span>
+          <span class="guide"></span>
+        </div>
         <div class="scan-line"></div>
       </div>
-      <div class="scan-tip" id="scanTip">将商品条码对准取景框</div>
+      <div class="scan-tip" id="scanTip">将商品条码横向放入框内，保持平稳</div>
       <div class="scan-manual">
         <input id="scanManual" type="text" inputmode="numeric" placeholder="或手动输入条码" />
         <button id="scanManualBtn" class="btn primary">确定</button>
@@ -3502,12 +3513,12 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
     if(!html5Qr){ try{ html5Qr = new Html5Qrcode("scanVideoWrapper", false); }catch(e){ scanTip.textContent="扫码组件初始化失败，请手动输入条码"; return; } }
     const config = {
       fps: 10,
-      qrbox: function(vw, vh){ const m = Math.min(vw, vh); return { width: Math.floor(m*0.72), height: Math.floor(m*0.46) }; },
+      qrbox: function(vw, vh){ return { width: Math.floor(vw*0.8), height: Math.floor(vh*0.38) }; },
       aspectRatio: 4/3,
       formatsToSupport: SCAN_FORMATS || undefined
     };
     html5Qr.start({facingMode:"environment"}, config, onScanSuccess, onScanError)
-      .then(()=>{ scanning = true; scanTip.textContent = "将商品条码对准取景框"; })
+      .then(()=>{ scanning = true; scanTip.textContent = "将商品条码横向放入框内，保持平稳"; })
       .catch(err=>{
         scanning = false;
         const msg = String(err && err.message || err || "");
