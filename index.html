@@ -94,18 +94,18 @@
   .scan-head{display:flex; align-items:center; justify-content:space-between; padding:12px 16px; color:#fff; font-weight:600; background:#15233a}
   .scan-x{border:none; background:none; color:#fff; font-size:17px; cursor:pointer; opacity:.8}
   .scan-view{position:relative; aspect-ratio:4/3; background:#000; overflow:hidden}
-  #scanVideoWrapper{position:absolute; inset:0; display:flex; align-items:center; justify-content:center}
-  #scanVideoWrapper video, #scanVideoWrapper canvas{width:100%!important; height:100%!important; object-fit:cover; display:block}
-  /* 取景框：与 qrbox 解码区严格同尺寸(宽80%×高38%)，四角角标+中心基准线引导对准 */
-  .scan-frame{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:80%; height:38%; pointer-events:none; z-index:3}
-  .scan-frame .corner{position:absolute; width:28px; height:28px; border:3px solid var(--accent); box-sizing:border-box}
-  .scan-frame .corner.tl{left:0; top:0; border-right:none; border-bottom:none; border-top-left-radius:10px}
-  .scan-frame .corner.tr{right:0; top:0; border-left:none; border-bottom:none; border-top-right-radius:10px}
-  .scan-frame .corner.bl{left:0; bottom:0; border-right:none; border-top:none; border-bottom-left-radius:10px}
-  .scan-frame .corner.br{right:0; bottom:0; border-left:none; border-top:none; border-bottom-right-radius:10px}
-  .scan-frame .guide{position:absolute; left:6%; right:6%; top:50%; border-top:2px dashed rgba(255,255,255,.85)}
-  .scan-line{position:absolute; left:10%; right:10%; top:50%; height:2px; background:var(--accent); box-shadow:0 0 8px var(--accent); animation:scanmove 1.8s ease-in-out infinite; transform:translateY(-1px); z-index:4}
-  @keyframes scanmove{0%{top:31%}50%{top:69%}100%{top:31%}}
+  #scanVideoWrapper{position:absolute; inset:0}
+  #scanVideoWrapper video{width:100%!important; height:100%!important; object-fit:cover; display:block}
+  /* 隐藏 html5-qrcode 库自带的默认 qrbox 样式（我们用自己的角标替代） */
+  #scanVideoWrapper #__qr_shaded{border:none!important; box-shadow:none!important; background:transparent!important}
+  #scanVideoWrapper [id^="__qr_"]{border:none!important; box-shadow:none!important; background:transparent!important}
+  /* 角标：动态注入到库的 qrbox 内部 */
+  .scan-corner{position:absolute; width:24px; height:24px; border:3px solid var(--accent); box-sizing:border-box; pointer-events:none; z-index:5}
+  .scan-corner.tl{left:0; top:0; border-right:none; border-bottom:none; border-top-left-radius:8px}
+  .scan-corner.tr{right:0; top:0; border-left:none; border-bottom:none; border-top-right-radius:8px}
+  .scan-corner.bl{left:0; bottom:0; border-right:none; border-top:none; border-bottom-left-radius:8px}
+  .scan-corner.br{right:0; bottom:0; border-left:none; border-top:none; border-bottom-right-radius:8px}
+  .scan-guide{position:absolute; left:8%; right:8%; top:50%; border-top:2px dashed rgba(255,255,255,.85); pointer-events:none; z-index:5}
   .scan-tip{color:#cdd6e4; font-size:13px; text-align:center; padding:10px 14px}
   .scan-manual{display:flex; gap:8px; padding:0 14px 14px}
   .scan-manual input{flex:1; height:42px; border:none; border-radius:10px; padding:0 12px; font-size:15px; outline:none}
@@ -406,12 +406,6 @@
       </div>
       <div class="scan-view">
         <div id="scanVideoWrapper"></div>
-        <div class="scan-frame">
-          <span class="corner tl"></span><span class="corner tr"></span>
-          <span class="corner bl"></span><span class="corner br"></span>
-          <span class="guide"></span>
-        </div>
-        <div class="scan-line"></div>
       </div>
       <div class="scan-tip" id="scanTip">将商品条码横向放入框内，保持平稳</div>
       <div class="scan-manual">
@@ -3518,7 +3512,12 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
       formatsToSupport: SCAN_FORMATS || undefined
     };
     html5Qr.start({facingMode:"environment"}, config, onScanSuccess, onScanError)
-      .then(()=>{ scanning = true; scanTip.textContent = "将商品条码横向放入框内，保持平稳"; })
+      .then(()=>{
+        scanning = true;
+        scanTip.textContent = "将商品条码横向放入框内，保持平稳";
+        // 将角标+基准线注入库的 qrbox 内部，确保视觉框=解码区
+        injectScanOverlay();
+      })
       .catch(err=>{
         scanning = false;
         const msg = String(err && err.message || err || "");
@@ -3533,6 +3532,42 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
     applyScanned(decodedText);
   }
   function onScanError(){ /* 连续识别中，忽略单帧错误 */ }
+
+  // 将角标+基准线动态注入 html5-qrcode 库的 qrbox 内部，保证视觉=解码区
+  function injectScanOverlay(){
+    const wrapper = document.getElementById("scanVideoWrapper");
+    if(!wrapper) return;
+    // html5-qrcode 在 wrapper 内创建 #__qr_shaded，其子元素中有一个是 qrbox（透明窗口）
+    const shaded = wrapper.querySelector("#__qr_shaded") || wrapper.querySelector("[id*='shaded']");
+    if(!shaded) return;
+    // 找到库的 qrbox（通常是 shaded 的直接子 div，或带 __qr_ 前缀的元素）
+    let qrbox = shaded.querySelector("[id*='qr']") || shaded.children[0];
+    if(!qrbox){
+      // 兜底：取 shaded 的第一个有尺寸的子元素
+      for(const ch of shaded.children){
+        const s = getComputedStyle(ch);
+        if(s.width && s.height && parseInt(s.width)>50){
+          qrbox = ch; break;
+        }
+      }
+    }
+    if(!qrbox) return;
+    // 确保 qrbox 有定位上下文
+    const pos = getComputedStyle(qrbox).position;
+    if(pos==="static") qrbox.style.position="relative";
+    // 避免重复注入
+    if(qrbox.querySelector(".scan-corner")) return;
+    // 注入四角角标
+    ["tl","tr","bl","br"].forEach(pos=>{
+      const el = document.createElement("span");
+      el.className = "scan-corner "+pos;
+      qrbox.appendChild(el);
+    });
+    // 注入中心基准线
+    const guide = document.createElement("span");
+    guide.className = "scan-guide";
+    qrbox.appendChild(guide);
+  }
   function stopCamera(){
     if(html5Qr && (scanning || html5Qr.isScanning)){
       scanning = false;
