@@ -15,6 +15,8 @@
     --hill-far:#6a9ac4; --hill-near:#4a7a9e; --sun-warm:#f0c050;
     --shadow:0 1px 2px rgba(60,40,20,.06), 0 8px 24px rgba(60,40,20,.10);
     --radius:14px;
+    --tech:#3cc4cc; --tech-glow:rgba(60,196,204,.42); --tech-glow-soft:rgba(60,196,204,.22);
+    --mech-press:.055s cubic-bezier(.4,0,.2,1);
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
@@ -90,19 +92,25 @@
   .search input:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); background:#fffaf3}
   .search svg{position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--muted-2)}
   .scan-btn{
-    position:absolute; right:7px; top:50%; transform:translateY(-50%);
+    position:absolute; right:7px; top:50%; margin-top:-17px;
     width:34px; height:34px; border:none; border-radius:9px; cursor:pointer;
     background:var(--accent-soft); color:var(--accent-ink); font-size:17px;
-    display:flex; align-items:center; justify-content:center; transition:background .12s;
+    display:flex; align-items:center; justify-content:center;
+    transition:background .12s, transform var(--mech-press), box-shadow .12s;
+    box-shadow:0 2px 0 #cfe0bf;
   }
-  .scan-btn:hover{background:#dceccb}
+  .scan-btn:hover{background:#dceccb; box-shadow:0 3px 0 #c4d8b2}
+  .scan-btn:active{transform:translateY(2px); box-shadow:0 0 0 3px var(--tech-glow-soft)}
   .qr-btn{
-    position:absolute; right:48px; top:50%; transform:translateY(-50%);
+    position:absolute; right:48px; top:50%; margin-top:-17px;
     width:34px; height:34px; border:none; border-radius:9px; cursor:pointer;
     background:#d8e8f2; color:#3a7aa0; font-size:17px;
-    display:flex; align-items:center; justify-content:center; transition:background .12s;
+    display:flex; align-items:center; justify-content:center;
+    transition:background .12s, transform var(--mech-press), box-shadow .12s;
+    box-shadow:0 2px 0 #bcd6e4;
   }
-  .qr-btn:hover{background:#c4dce8}
+  .qr-btn:hover{background:#c4dce8; box-shadow:0 3px 0 #aecdda}
+  .qr-btn:active{transform:translateY(2px); box-shadow:0 0 0 3px var(--tech-glow-soft)}
   .qr-modal{position:fixed; inset:0; background:rgba(20,30,45,.55); display:none; align-items:center; justify-content:center; z-index:80; padding:20px}
   .qr-modal.show{display:flex}
   .qr-card{background:#fff; border-radius:18px; padding:22px; width:min(340px,92%); text-align:center; box-shadow:0 20px 50px rgba(0,0,0,.3)}
@@ -142,12 +150,15 @@
   .chips .lbl{font-size:12.5px; color:var(--muted); margin-right:2px}
   .chip{
     border:1px solid var(--line); background:#fff; color:#5a5040; border-radius:999px;
-    padding:6px 13px; font-size:13.5px; cursor:pointer; user-select:none; transition:all .12s;
+    padding:6px 13px; font-size:13.5px; cursor:pointer; user-select:none;
+    transition:transform var(--mech-press), box-shadow .12s, border-color .12s, background .12s, color .12s;
+    box-shadow:0 2px 0 var(--line);
   }
-  .chip:hover{border-color:#cfd5de}
-  .chip.active{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600}
-  .chip.warn.active{background:var(--warn); border-color:var(--warn)}
-  .chip.danger.active{background:var(--danger); border-color:var(--danger)}
+  .chip:hover{border-color:#cfd5de; box-shadow:0 3px 0 #e4dcc4}
+  .chip:active{transform:translateY(2px); box-shadow:0 0 0 3px var(--tech-glow-soft)}
+  .chip.active{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; box-shadow:0 2px 0 #4a6b2a}
+  .chip.warn.active{background:var(--warn); border-color:var(--warn); box-shadow:0 2px 0 #a8741f}
+  .chip.danger.active{background:var(--danger); border-color:var(--danger); box-shadow:0 2px 0 #9c4128}
   .toolbar2{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
   .resultline{font-size:13px; color:var(--muted)}
   .resultline b{color:var(--text); font-variant-numeric:tabular-nums}
@@ -185,7 +196,7 @@
     cursor:pointer; transition:background .15s, border-color .15s, color .15s, transform .08s;
     box-shadow:0 1px 2px rgba(20,30,50,.06)}
   .icon-btn:hover{background:var(--accent-soft); border-color:var(--accent); color:var(--accent-ink)}
-  .icon-btn:active{transform:scale(.92)}
+  .icon-btn:active{transform:scale(.92); box-shadow:0 0 0 3px var(--tech-glow-soft)}
   .icon-btn.on{color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft)}
   .icon-btn svg{display:block; width:18px; height:18px}
   @media(max-width:560px){ .icon-btn{width:32px; height:32px} }
@@ -194,10 +205,13 @@
   .stepper{display:inline-flex; align-items:center; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:#fff}
   .stepper button{
     width:30px; height:32px; border:none; background:#fffaf3; color:#6b6650; font-size:17px;
-    cursor:pointer; line-height:1; transition:background .12s;
+    cursor:pointer; line-height:1; transition:background .12s, transform var(--mech-press), box-shadow .12s;
+    box-shadow:0 2px 0 #e4dcc4;
   }
-  .stepper button:hover{background:var(--accent-soft); color:var(--accent-ink)}
-  .stepper button:disabled{color:#cfd5de; cursor:not-allowed; background:#fffaf3}
+  .stepper button:hover{background:var(--accent-soft); color:var(--accent-ink); box-shadow:0 3px 0 #d8ccb4}
+  .stepper button:active{transform:translateY(2px); background:var(--accent-soft); color:var(--accent-ink);
+    box-shadow:0 0 0 3px var(--tech-glow-soft)}
+  .stepper button:disabled{color:#cfd5de; cursor:not-allowed; background:#fffaf3; box-shadow:0 2px 0 #efe9dd; transform:none}
   .stepper input{
     width:46px; height:32px; border:none; border-left:1px solid var(--line); border-right:1px solid var(--line);
     text-align:center; font-size:14px; color:var(--text); background:#fff; outline:none; font-variant-numeric:tabular-nums;
@@ -210,9 +224,11 @@
   .pager{display:flex; align-items:center; justify-content:center; gap:10px; padding:13px; border-top:1px solid var(--line)}
   .pager button{
     border:1px solid var(--line); background:#fff; color:#5a5040; border-radius:9px;
-    padding:6px 14px; font-size:13.5px; cursor:pointer; transition:all .12s;
+    padding:6px 14px; font-size:13.5px; cursor:pointer; transition:transform var(--mech-press), box-shadow .12s, border-color .12s, color .12s;
+    box-shadow:0 2px 0 var(--line);
   }
-  .pager button:hover:not(:disabled){border-color:var(--accent); color:var(--accent-ink)}
+  .pager button:hover:not(:disabled){border-color:var(--accent); color:var(--accent-ink); box-shadow:0 3px 0 #e4dcc4}
+  .pager button:active:not(:disabled){transform:translateY(2px); box-shadow:0 0 0 3px var(--tech-glow-soft)}
   .pager button:disabled{opacity:.45; cursor:not-allowed}
   .pager .pg{font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums}
 
@@ -237,14 +253,19 @@
   .totalrow .t-val small{font-size:13px; font-weight:600; color:var(--muted)}
   .btn{
     width:100%; border:none; border-radius:11px; padding:12px; font-size:15px; font-weight:700;
-    cursor:pointer; transition:transform .08s, box-shadow .15s; display:flex; align-items:center; justify-content:center; gap:7px;
+    cursor:pointer; transition:transform var(--mech-press), box-shadow .12s; display:flex; align-items:center; justify-content:center; gap:7px;
   }
-  .btn.primary{background:linear-gradient(135deg,var(--accent),#188a63); color:#fff; box-shadow:0 6px 16px rgba(31,157,116,.32)}
-  .btn.primary:hover{background:linear-gradient(135deg,#1b8c68,#157a57); box-shadow:0 8px 22px rgba(31,157,116,.42); transform:translateY(-1px)}
-  .btn.primary:active{transform:translateY(1px)}
-  .btn.ghost{background:#fff; color:#5a5040; border:1px solid var(--line); margin-top:8px}
-  .btn.ghost:hover{border-color:#cfd5de}
-  .btn:disabled{opacity:.5; cursor:not-allowed; box-shadow:none}
+  .btn.primary{background:linear-gradient(135deg,var(--accent),#188a63); color:#fff;
+    box-shadow:0 3px 0 #136b4c, 0 6px 16px rgba(31,157,116,.32)}
+  .btn.primary:hover{background:linear-gradient(135deg,#1b8c68,#157a57);
+    box-shadow:0 4px 0 #136b4c, 0 9px 22px rgba(31,157,116,.42); transform:translateY(-1px)}
+  .btn.primary:active{transform:translateY(3px);
+    box-shadow:0 1px 0 #136b4c, 0 2px 8px rgba(31,157,116,.4), 0 0 0 3px var(--tech-glow)}
+  .btn.ghost{background:#fff; color:#5a5040; border:1px solid var(--line); margin-top:8px;
+    box-shadow:0 2px 0 var(--line)}
+  .btn.ghost:hover{border-color:#cfd5de; box-shadow:0 3px 0 #e4dcc4}
+  .btn.ghost:active{transform:translateY(2px); box-shadow:0 0 0 3px var(--tech-glow-soft)}
+  .btn:disabled{opacity:.5; cursor:not-allowed; box-shadow:none; transform:none}
   .cart .chint{font-size:12px; color:var(--muted-2); text-align:center; padding:24px 14px}
 
   /* mobile bottom-bar cart trigger (hidden on desktop) */
@@ -3205,15 +3226,18 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
       audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
       if(audioCtx.state === "suspended") audioCtx.resume();
       const t = audioCtx.currentTime;
-      const o = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      o.type = "square";
-      o.frequency.setValueAtTime(720, t);
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.05, t + 0.004);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
-      o.connect(g); g.connect(audioCtx.destination);
-      o.start(t); o.stop(t + 0.08);
+      // 机械键盘式脆响：高频"咔" + 低频"嗒" 快速叠加衰减
+      const mk = (freq, vol, dur, type) => {
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = type || "square"; o.frequency.setValueAtTime(freq, t);
+        g.gain.setValueAtTime(vol, t);                 // 瞬态起音，无渐入
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t); o.stop(t + dur + 0.005);
+      };
+      mk(1240, 0.06, 0.016, "square");   // 高频"咔"
+      mk(430, 0.05, 0.022, "square");    // 低频"嗒"
+      mk(2500, 0.022, 0.008, "triangle"); // 极短亮芯，增强机械感
     }catch(e){}
   }
   // 全局事件委托：所有 button 点击都响（二维码/扫码/诊断弹窗内部按钮除外）
