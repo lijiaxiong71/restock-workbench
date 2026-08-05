@@ -90,6 +90,13 @@
   .qr-card img{width:240px; height:240px; border-radius:12px; margin:0 auto; display:block; border:1px solid var(--line)}
   .qr-card .qr-url{margin-top:12px; font-size:12px; color:var(--muted-2); word-break:break-all; background:#f6f9fd; padding:8px 10px; border-radius:8px}
   .qr-card .btn{margin-top:14px; width:100%}
+  .sr-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:26px; letter-spacing:2px; font-weight:700; color:var(--text); background:#f6f9fd; border:1px dashed var(--line); border-radius:12px; padding:14px 10px; margin:6px 0 10px; word-break:break-all}
+  .sr-cands{margin:6px 0 4px; text-align:left}
+  .sr-cand-h{font-size:13px; color:var(--muted); margin:8px 0 6px}
+  .sr-cand{display:flex; flex-direction:column; gap:2px; padding:8px 10px; border:1px solid var(--line); border-radius:10px; margin-bottom:6px; background:#fff}
+  .sr-cand-name{font-size:14px; color:var(--text); font-weight:600}
+  .sr-cand-bar{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; color:var(--muted-2)}
+  .sr-tip{font-size:12px; color:var(--muted); margin:10px 0 0; line-height:1.5}
   .scan-box{background:#0e1726; border-radius:16px; width:min(420px,92%); overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,.4)}
   .scan-head{display:flex; align-items:center; justify-content:space-between; padding:12px 16px; color:#fff; font-weight:600; background:#15233a}
   .scan-x{border:none; background:none; color:#fff; font-size:17px; cursor:pointer; opacity:.8}
@@ -394,6 +401,19 @@
       <img src="data:image/png;base64,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AMgRJwDu3tY7cd9pl5X9q8l9ucm9shW16zlxD/Dm3/Lk9dSe12/senZxcgIgR5wAyBEnAHLECYAccQIgR5wAyBEnAHLECYAccQIgR5wAyBEnAO7e1ltx4gZUbWds5R7u2t+bvJ5dn1Wz6/7s+u6Tm4G192fFibt5vwfu7zk5AZAjTgDkiBMAOeIEQI44AZAjTgDkiBMAOeIEQI44AZAjTgDkiBMAObltvRU372itOHFj7cT7PPm8JvfTdv2d2vszuSe5y2dwV7D2O3VyAiBHnADIEScAcsQJgBxxAiBHnADIEScAcsQJgBxxAiBHnADIEScAco7c1rvZ5LbVLpN7bpPXs+uzJk1ux03ew9reZu19XlHbFXRyAiBHnADIEScAcsQJgBxxAiBHnADIEScAcsQJgBxxAiBHnADIEScAcmzrHWbXZldtj+vE66nt1E1uvtW++6Rd11P7Xp/YDqSTEwA54gRAjjgBkCNOAOSIEwA54gRAjjgBkCNOAOSIEwA54gRAjjgBkHPktl5tA2qXXZtmu/bTdpncaqt91orJ51X77dT2AGt/Z0VtC3EXJycAcsQJgBxxAiBHnADIEScAcsQJgBxxAiBHnADIEScAcsQJgBxxAiAnt6134gbUiXbtg01ukdXen7d+1uSO31v37mq7eZ/YpuIKJycAcsQJgBxxAiBHnADIEScAcsQJgBxxAiBHnADIEScAcsQJgBxxAiDn+3meP30NAPA3Tk4A5IgTADniBECOOAGQI04A5IgTADniBECOOAGQI04A5IgTADniBECOOAGQI04A5IgTADniBECOOAGQI04A5IgTADniBECOOAGQI04A5IgTADniBECOOAGQI04A5IgTADniBECOOAGQI04A5IgTADniBECOOAGQI04A5IgTADniBMBXzV/CQsKHNudjKAAAAABJRU5ErkJggg==" alt="工作台二维码" />
       <div class="qr-url" id="qrUrl"></div>
       <button class="btn ghost" id="qrClose">关闭</button>
+    </div>
+  </div>
+
+  <!-- 扫码未找到：诊断弹窗 -->
+  <div class="qr-modal" id="scanResultModal">
+    <div class="qr-card">
+      <h3>未找到该条码</h3>
+      <p>扫码识别到的数字：</p>
+      <div class="sr-code" id="srCode">—</div>
+      <button class="btn ghost" id="srCopy">复制条码</button>
+      <div class="sr-cands" id="srCands"></div>
+      <p class="sr-tip">若商品其实在目录里，说明目录条码与实物不符。请把上方数字 + 商品名发我，我直接修正目录。</p>
+      <button class="btn ghost" id="srClose">关闭</button>
     </div>
   </div>
 
@@ -3541,28 +3561,53 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
       html5Qr.stop().then(()=>{ try{ html5Qr.clear(); }catch(e){} }).catch(()=>{});
     }
   }
-  // 归一化条码：去空格、去非数字（兼容前导0/长度差异），用于模糊匹配
-  function normCode(v){
-    return String(v||"").replace(/[^0-9]/g, "");
+  // 归一化条码：去掉所有非数字字符
+  function normCode(v){ return String(v||"").replace(/[^0-9]/g, ""); }
+
+  // 生成一组候选 GTIN：覆盖 EAN-8 / UPC-A(12) / EAN-13(13) / GTIN-14(14) 的互转与去前导0
+  function gtinVariants(v){
+    const n = normCode(v);
+    if(!n) return [];
+    const out = new Set([n]);
+    if(n.length===12) out.add("0"+n);                       // UPC-A -> EAN-13
+    if(n.length===13 && n[0]==="0") out.add(n.slice(1));    // EAN-13 -> UPC-A
+    if(n.length===13) out.add("0"+n);                       // EAN-13 -> GTIN-14
+    if(n.length===14) out.add(n.slice(1));                  // GTIN-14 -> EAN-13
+    out.add(n.replace(/^0+/, ""));                          // 去全部前导0
+    return [...out].filter(Boolean);
   }
+
   function findProductByCode(v){
     if(!v) return null;
-    const raw = String(v).trim();
-    const num = normCode(raw);
-    // 1) 精确匹配（含原始串、去非数字、去前导0）
-    let hit = P.find(p => {
-      const b = String(p.barcode||"").trim();
-      return b === raw || normCode(b) === num || normCode(b).replace(/^0+/,"") === num.replace(/^0+/,"");
-    });
-    if(hit) return hit;
-    // 2) 末尾/开头补0对齐（EAN-13 与 UPC-A 互转：13位补前导0成14位）
-    const padded = num.length === 13 ? "0"+num : (num.length === 14 ? num.slice(1) : null);
-    if(padded){
-      hit = P.find(p => normCode(p.barcode) === padded || normCode(p.barcode) === (num.length===14?num.slice(1):num));
-      if(hit) return hit;
+    const raw = normCode(v);
+    const variants = gtinVariants(raw);
+    for(const p of P){
+      const b = normCode(p.barcode);
+      if(!b) continue;
+      if(b===raw || variants.includes(b) || variants.includes(b.replace(/^0+/,""))) return p;
     }
     return null;
   }
+
+  // 未找到时，按数字重叠度给出最可能的候选商品供人工核对
+  function candidateProducts(v, limit){
+    limit = limit || 4;
+    const n = normCode(v);
+    if(n.length < 8) return [];
+    const scored = [];
+    for(const p of P){
+      const b = normCode(p.barcode);
+      if(!b || b.length < 8) continue;
+      let score = 0;
+      if(b.includes(n) || n.includes(b)) score = Math.max(score, Math.min(b.length, n.length));
+      if(n.length >= 12 && b.slice(-12) === n.slice(-12)) score = Math.max(score, 12);
+      if(b.slice(1) === n || n.slice(1) === b) score = Math.max(score, Math.min(b.length, n.length) - 1);
+      if(score > 0) scored.push({ p, score });
+    }
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, limit).map(x => x.p);
+  }
+
   function applyScanned(v){
     closeScanner();
     const q = document.getElementById("q");
@@ -3571,7 +3616,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
     if(hit){
       toast("已关联商品：" + hit.name + "（条码 " + hit.barcode + "）");
     }else{
-      toast("已扫到条码 " + v + "，但目录中未找到该商品，可手动核对");
+      showScanResult(v);
     }
   }
   scanBtn.addEventListener("click", openScanner);
@@ -3587,6 +3632,33 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
   scanMask.addEventListener("click", e=>{ if(e.target===scanMask) closeScanner(); });
   scanManualBtn.addEventListener("click", ()=>{ const v=scanManual.value.trim(); if(v) applyScanned(v); });
   scanManual.addEventListener("keydown", e=>{ if(e.key==="Enter"){ const v=scanManual.value.trim(); if(v) applyScanned(v); } });
+
+  // ---- 扫码未找到：诊断弹窗 ----
+  const srModal = document.getElementById("scanResultModal");
+  const srCode  = document.getElementById("srCode");
+  const srCands = document.getElementById("srCands");
+  document.getElementById("srClose").onclick = ()=> srModal.classList.remove("show");
+  srModal.addEventListener("click", e=>{ if(e.target===srModal) srModal.classList.remove("show"); });
+  document.getElementById("srCopy").onclick = ()=>{
+    const t = srCode.textContent;
+    if(navigator.clipboard){ navigator.clipboard.writeText(t).then(()=>toast("已复制："+t),()=>{}); }
+  };
+  function showScanResult(v){
+    srCode.textContent = normCode(v) || v;
+    const cands = candidateProducts(v, 4);
+    srCands.innerHTML = "";
+    if(cands.length){
+      const h = document.createElement("div"); h.className = "sr-cand-h"; h.textContent = "目录中可能的匹配（请核对条码）："; srCands.appendChild(h);
+      cands.forEach(p=>{
+        const row = document.createElement("div"); row.className = "sr-cand";
+        row.innerHTML = '<span class="sr-cand-name">'+esc(p.name)+'</span><span class="sr-cand-bar">'+esc(p.barcode||"无条码")+'</span>';
+        srCands.appendChild(row);
+      });
+    }else{
+      const note = document.createElement("div"); note.className = "sr-cand-h"; note.textContent = "目录中无相似条码。"; srCands.appendChild(note);
+    }
+    srModal.classList.add("show");
+  }
 
   // ---- toast ----
   let toastTimer;
