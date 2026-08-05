@@ -153,6 +153,10 @@
   .badge.zero{background:var(--danger-soft); color:var(--danger)}
   .badge.low{background:var(--warn-soft); color:var(--warn)}
   .badge.ok{background:var(--ok-soft); color:var(--ok)}
+  .stock-edit{display:inline-flex; align-items:center; gap:5px}
+  .stock-input{width:52px; height:28px; padding:2px 4px; border:1px solid var(--line); border-radius:6px; font-size:12px; text-align:center; font-variant-numeric:tabular-nums; background:#fff; color:var(--text)}
+  .stock-input:focus{outline:none; border-color:var(--accent)}
+  .btn.sm{padding:5px 12px; font-size:13px}
   .num-cell{font-variant-numeric:tabular-nums; color:#5a606b}
 
   /* stepper */
@@ -333,6 +337,7 @@
             <span class="chip danger" data-q="zero">仅看缺货</span>
           </div>
           <div class="resultline">匹配 <b id="resCount">0</b> 个商品</div>
+          <button class="btn ghost sm" id="expStock" title="导出现有库存(CSV)">导出库存</button>
         </div>
       </div>
 
@@ -3085,6 +3090,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
   const P = window.PRODUCTS || [];
   const PAGE = 80;
   const STORE_KEY = "restock_cart_v1";
+  const STOCK_KEY = "restock_stock_v1";
 
   // ---- state ----
   const state = {
@@ -3101,6 +3107,16 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
   }
   // stable key for a product
   function keyOf(p){ return (p.barcode && p.barcode!=="") ? p.barcode : (p.supplier+"|"+p.name); }
+
+  // 库存覆盖（本机持久）：加载时应用到内存
+  function loadStock(){ try{ return JSON.parse(localStorage.getItem(STOCK_KEY)) || {}; }catch(e){ return {}; } }
+  function saveStock(map){ try{ localStorage.setItem(STOCK_KEY, JSON.stringify(map)); }catch(e){} }
+  (function applyStock(){
+    const ov = loadStock();
+    if(ov && Object.keys(ov).length){
+      P.forEach(p=>{ const k = keyOf(p); if(k in ov && ov[k]!=null) p.stock = ov[k]; });
+    }
+  })();
 
   // ---- derive suppliers & categories ----
   const suppliers = ["全部", ...Array.from(new Set(P.map(p=>p.supplier)))];
@@ -3173,6 +3189,12 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
     if(p.stock<=5) return '<span class="stock" style="color:var(--warn)">'+p.stock+'</span><span class="badge low">低</span>';
     return '<span class="stock" style="color:var(--ok)">'+p.stock+'</span><span class="badge ok">充足</span>';
   }
+  function stockTag(s){
+    s = Number(s)||0;
+    if(s===0) return '<span class="badge zero">缺货</span>';
+    if(s<=5) return '<span class="badge low">低</span>';
+    return '<span class="badge ok">充足</span>';
+  }
 
   // 进货单位：按业务规则推导（仅用于发送补货单，不影响查询目录的销售单位）
   function orderUnit(p){
@@ -3222,7 +3244,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
           '<td data-label="分组">'+(p.category?'<span class="tag">'+esc(p.category)+'</span>':'—')+'</td>'+
           '<td data-label="售价" class="price">¥'+fmt(p.price)+'</td>'+
           '<td data-label="成本" class="num-cell">¥'+fmt(p.cost)+'</td>'+
-          '<td data-label="库存">'+stockBadge(p)+'</td>'+
+          '<td data-label="库存"><div class="stock-edit" data-k="'+esc(k)+'"><input type="number" class="stock-input" value="'+(p.stock!=null?p.stock:0)+'" min="0" step="1" inputmode="numeric" />'+stockTag(p.stock)+'</div></td>'+
           '<td data-label="单位" class="num-cell">'+(p.unit||'—')+'</td>'+
           '<td data-label="补货数量" style="text-align:right">'+stepperHTML(k,qty,p)+'</td>';
         tbody.appendChild(tr);
@@ -3254,6 +3276,39 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
     if(v===0) delete state.cart[k]; else state.cart[k]=v;
     saveCart(); render(); renderCart();
   }
+
+  // 库存可编辑（本机持久）
+  function updateStockStats(){
+    let z=0,l=0;
+    P.forEach(p=>{ if(p.stock===0) z++; else if(p.stock>0 && p.stock<=5) l++; });
+    document.getElementById("stZero").textContent=z;
+    document.getElementById("stLow").textContent=l;
+  }
+  tbody.addEventListener('input', e=>{
+    const inp = e.target.closest('.stock-input'); if(!inp) return;
+    const wrap = inp.closest('.stock-edit'); if(!wrap) return;
+    const k = wrap.getAttribute('data-k');
+    const p = P.find(x=>keyOf(x)===k); if(!p) return;
+    let v = parseInt(inp.value,10); if(isNaN(v)||v<0) v=0;
+    p.stock = v;
+    const tag = wrap.querySelector('.badge');
+    if(tag) tag.outerHTML = stockTag(p.stock);
+    const ov = loadStock(); ov[k]=p.stock; saveStock(ov);
+    updateStockStats();
+  });
+  tbody.addEventListener('change', e=>{
+    if(e.target.closest('.stock-input')){ render(); }
+  });
+  document.getElementById("expStock").addEventListener("click", ()=>{
+    let csv = "条码,商品名称,库存\n";
+    P.forEach(p=>{ csv += '"'+(p.barcode||"")+'","'+String(p.name||"").replace(/"/g,'""')+'",'+(p.stock!=null?p.stock:"")+'\n'; });
+    const blob = new Blob(["\ufeff"+csv], {type:"text/csv;charset=utf-8"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "库存表_"+new Date().toISOString().slice(0,10)+".csv";
+    document.body.appendChild(a); a.click(); a.remove();
+    toast("已导出现有库存表(CSV)");
+  });
 
   document.getElementById("prevPage").onclick = ()=>{ if(state.page>1){state.page--; render();} };
   document.getElementById("nextPage").onclick = ()=>{ state.page++; render(); };
