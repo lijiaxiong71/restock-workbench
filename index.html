@@ -268,18 +268,18 @@
     .table-scroll{overflow:visible}
     table,thead,tbody,tr,td{display:block; width:100%}
     thead{display:none}
-    tbody tr{border:1px solid var(--line); border-radius:12px; margin-bottom:6px; padding:1px 0; background:#fff; box-shadow:0 1px 2px rgba(20,30,50,.05)}
+    tbody tr{border:1px solid var(--line); border-radius:10px; margin-bottom:5px; padding:3px 6px; background:#fff; display:flex; flex-wrap:wrap; align-items:center; gap:2px 6px; box-shadow:0 1px 2px rgba(20,30,50,.05)}
     tbody tr:hover{background:#fff}
-    tbody td{border:none; padding:4px 12px; display:flex; align-items:center; justify-content:space-between; gap:10px; text-align:right}
-    tbody td::before{content:attr(data-label); color:var(--muted); font-size:12px; font-weight:500; flex:none; text-align:left}
-    tbody td:first-child{display:block; padding:7px 12px 5px; border-bottom:1px solid var(--line-soft); margin-bottom:1px}
+    tbody td{border:none; padding:1px 4px; display:inline-flex; align-items:center; gap:3px; font-size:11.5px; line-height:1.3; text-align:left}
+    tbody td::before{content:attr(data-label); color:var(--muted); font-size:10px; font-weight:500; flex:none}
+    tbody td:first-child{width:100%; display:block; padding:3px 4px 2px; border-bottom:1px solid var(--line-soft); margin-bottom:2px}
     tbody td:first-child::before{display:none}
-    .pname{font-size:15px; font-weight:600; letter-spacing:.2px}
-    .pbarcode{font-size:11.5px}
-    tbody td:last-child{justify-content:space-between; background:var(--accent-soft); border-radius:0 0 11px 11px; margin-top:4px; padding:6px 12px}
-    tbody td:last-child::before{color:var(--accent-ink); font-weight:600; font-size:12px}
-    .stepper button{width:36px; height:36px; font-size:18px; border-radius:9px}
-    .stepper input{height:36px; width:50px; font-size:14.5px}
+    .pname{font-size:13.5px; font-weight:600; letter-spacing:.1px}
+    .pbarcode{font-size:10.5px}
+    tbody td:last-child{width:100%; justify-content:flex-end; background:var(--accent-soft); border-radius:7px; margin-top:2px; padding:3px 8px}
+    tbody td:last-child::before{color:var(--accent-ink); font-weight:600; font-size:10.5px}
+    .stepper button{width:32px; height:32px; font-size:17px; border-radius:8px}
+    .stepper input{height:32px; width:46px; font-size:14px}
     .pager button{padding:8px 18px; font-size:14px}
 
     /* cart -> fixed bottom sheet */
